@@ -12,10 +12,10 @@ habitacionesRoutes.get("/", async (c) => {
 
 habitacionesRoutes.post("/", zValidator("json", habitacionCreate), async (c) => {
   const data = c.req.valid("json");
-  const [row] = await db
-    .insert(habitaciones)
-    .values({ ...data, tarifaBase: String(data.tarifaBase) })
-    .returning();
+  // Variable, no objeto literal: evita el falso "excess property" de TS cuando
+  // la inferencia de Drizzle se degrada en algunos builds (ver reservas.ts).
+  const values = { ...data, tarifaBase: String(data.tarifaBase) };
+  const [row] = await db.insert(habitaciones).values(values).returning();
   return c.json(row, 201);
 });
 
