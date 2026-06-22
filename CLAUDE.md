@@ -61,9 +61,20 @@ pnpm --filter @suites/web build
 - **Migraciones**: runner propio en `packages/db/src/migrate.ts` (NO drizzle-kit para el
   DDL, porque el `EXCLUDE` va en SQL crudo). Aplica los `.sql` de `packages/db/migrations`
   en orden y registra en la tabla `_migrations`. Usa `pg` + `DATABASE_URL_UNPOOLED`.
-- **Runtime**: `packages/db/src/index.ts` usa el driver **serverless de Neon**
-  (`@neondatabase/serverless` Pool + `drizzle-orm/neon-serverless`), que soporta
-  transacciones (las usamos en el alta de reserva) y funciona en serverless.
+- **Runtime**: `packages/db/src/index.ts` usa el driver **HTTP de Neon**
+  (`neon()` + `drizzle-orm/neon-http`). Usa `fetch` nativo, sin WebSocket → no
+  crashea en las funciones de Vercel. **No uses el driver WebSocket
+  (`neon-serverless` + `ws`)**: anda local pero crasheaba la función en Vercel.
+  - **Versión clave**: `@neondatabase/serverless` fijado en **0.10.x**. La v1.x
+    cambió la API y rompe con `drizzle-orm` 0.38 (error "can now be called only
+    as a tagged-template").
+  - El driver HTTP **no tiene transacciones interactivas**. La única operación
+    transaccional (alta de reserva: huésped + reserva) se hace con **UNA
+    sentencia CTE** (`WITH nuevo_huesped AS (INSERT ... RETURNING id) INSERT INTO
+    reservas SELECT ... FROM nuevo_huesped`), que es atómica y dispara igual el
+    `EXCLUDE` → 409 si hay overbooking. Ver `apps/api/src/routes/reservas.ts`.
+  - `packages/db/src/index.ts` exporta `sql` (el tagged-template de neon) para esa
+    sentencia.
 - **Schema Drizzle** (`packages/db/src/schema.ts`) es la fuente de tipos para queries.
   El `EXCLUDE` vive solo en el SQL (Drizzle no lo expresa); mantener ambos en sync.
 - **Env**: `.env` en la RAÍZ del repo (gitignored). `packages/db/src/load-env.ts` lo
