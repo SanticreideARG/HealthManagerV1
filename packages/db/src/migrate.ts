@@ -3,7 +3,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { needsSsl } from "./index.js";
+
+/** SSL para cualquier DB cloud (Neon/Vercel/etc); off solo en local. */
+function needsSsl(cs: string): boolean {
+  return !/@(localhost|127\.0\.0\.1)/.test(cs);
+}
 
 /**
  * Runner de migraciones simple y transparente: aplica en orden los .sql de

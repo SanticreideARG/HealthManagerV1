@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
-import { db, habitaciones } from "@suites/db";
+import { db, eq, habitaciones } from "@suites/db";
 import { habitacionCreate, habitacionUpdate } from "@suites/shared";
 
 export const habitacionesRoutes = new Hono();
