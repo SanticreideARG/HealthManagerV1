@@ -38,14 +38,18 @@ export type HabitacionCreate = z.infer<typeof habitacionCreate>;
 export const habitacionUpdate = habitacionCreate.partial();
 export type HabitacionUpdate = z.infer<typeof habitacionUpdate>;
 
-// ---------- Huéspedes (ficha mínima en MVP) ----------
+// ---------- Huéspedes (ficha: datos + preferencias) ----------
 export const huespedCreate = z.object({
   nombre: z.string().min(1).max(120),
   documento: z.string().max(40).optional(),
   email: z.string().email().optional(),
   telefono: z.string().max(40).optional(),
+  notas: z.string().max(500).optional(), // preferencias, alergias, etc.
 });
 export type HuespedCreate = z.infer<typeof huespedCreate>;
+
+export const huespedUpdate = huespedCreate.partial();
+export type HuespedUpdate = z.infer<typeof huespedUpdate>;
 
 // ---------- Reservas ----------
 export const reservaCreate = z

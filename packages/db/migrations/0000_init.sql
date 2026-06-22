@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS huespedes (
   documento  VARCHAR(40),
   email      VARCHAR(160),
   telefono   VARCHAR(40),
+  notas      TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

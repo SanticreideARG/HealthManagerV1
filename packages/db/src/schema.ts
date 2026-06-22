@@ -56,6 +56,7 @@ export const huespedes = pgTable("huespedes", {
   documento: varchar("documento", { length: 40 }),
   email: varchar("email", { length: 160 }),
   telefono: varchar("telefono", { length: 40 }),
+  notas: text("notas"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

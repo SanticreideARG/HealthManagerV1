@@ -12,11 +12,31 @@ export interface Habitacion {
 export interface ReservaListItem {
   id: number;
   habitacionId: number;
+  huespedId: number;
   checkin: string;
   checkout: string;
   estado: EstadoReserva;
   total: string;
   huesped: string;
+}
+
+export interface Huesped {
+  id: number;
+  nombre: string;
+  documento: string | null;
+  email: string | null;
+  telefono: string | null;
+  notas: string | null;
+}
+
+export interface HistorialItem {
+  id: number;
+  habitacionId: number;
+  habitacion: string;
+  checkin: string;
+  checkout: string;
+  estado: EstadoReserva;
+  total: string;
 }
 
 export class ApiError extends Error {
@@ -45,6 +65,18 @@ export interface ApiClient {
       data: import("@suites/shared").HabitacionUpdate,
     ) => Promise<Habitacion>;
     remove: (id: number) => Promise<{ ok: true }>;
+  };
+  huespedes: {
+    list: () => Promise<Huesped[]>;
+    create: (
+      data: import("@suites/shared").HuespedCreate,
+    ) => Promise<Huesped>;
+    update: (
+      id: number,
+      data: import("@suites/shared").HuespedUpdate,
+    ) => Promise<Huesped>;
+    remove: (id: number) => Promise<{ ok: true }>;
+    historial: (id: number) => Promise<HistorialItem[]>;
   };
   reservas: {
     list: (desde?: string, hasta?: string) => Promise<ReservaListItem[]>;

@@ -40,6 +40,7 @@ reservasRoutes.get("/", async (c) => {
     .select({
       id: reservas.id,
       habitacionId: reservas.habitacionId,
+      huespedId: reservas.huespedId,
       checkin: reservas.checkin,
       checkout: reservas.checkout,
       estado: reservas.estado,

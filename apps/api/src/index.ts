@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { habitacionesRoutes } from "./routes/habitaciones.js";
 import { reservasRoutes } from "./routes/reservas.js";
+import { huespedesRoutes } from "./routes/huespedes.js";
 
 const app = new Hono();
 
@@ -16,6 +17,7 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 
 app.route("/habitaciones", habitacionesRoutes);
 app.route("/reservas", reservasRoutes);
+app.route("/huespedes", huespedesRoutes);
 
 const port = Number(process.env.PORT ?? 3001);
 serve({ fetch: app.fetch, port }, (info) => {

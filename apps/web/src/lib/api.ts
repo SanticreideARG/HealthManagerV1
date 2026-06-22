@@ -1,16 +1,24 @@
 import type {
   HabitacionCreate,
   HabitacionUpdate,
+  HuespedCreate,
+  HuespedUpdate,
   ReservaCreate,
   ReservaUpdate,
 } from "@suites/shared";
-import type { ApiClient, Habitacion, ReservaListItem } from "./types.js";
+import type {
+  ApiClient,
+  Habitacion,
+  Huesped,
+  HistorialItem,
+  ReservaListItem,
+} from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
 
 // Re-export para no romper imports existentes (`from "../lib/api.js"`).
 export { ApiError };
-export type { Habitacion, ReservaListItem };
+export type { Habitacion, Huesped, HistorialItem, ReservaListItem };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const USE_MOCK = import.meta.env.VITE_MOCK === "1";
@@ -42,6 +50,23 @@ const realApi: ApiClient = {
       }),
     remove: (id: number) =>
       request<{ ok: true }>(`/habitaciones/${id}`, { method: "DELETE" }),
+  },
+  huespedes: {
+    list: () => request<Huesped[]>("/huespedes"),
+    create: (data: HuespedCreate) =>
+      request<Huesped>("/huespedes", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: HuespedUpdate) =>
+      request<Huesped>(`/huespedes/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/huespedes/${id}`, { method: "DELETE" }),
+    historial: (id: number) =>
+      request<HistorialItem[]>(`/huespedes/${id}/historial`),
   },
   reservas: {
     list: (desde?: string, hasta?: string) => {
