@@ -344,18 +344,25 @@ export const mockApi: ApiClient = {
           new ApiError(409, "Esas fechas ya están ocupadas.", "overbooking"),
         );
       }
-      const huesped: Huesped = {
-        id: ++seqHuesped,
-        nombre: data.huesped.nombre,
-        documento: data.huesped.documento ?? null,
-        email: data.huesped.email ?? null,
-        telefono: data.huesped.telefono ?? null,
-        notas: data.huesped.notas ?? null,
-      };
-      huespedes.push(huesped);
+      // Huésped existente o nuevo.
+      let huespedId: number;
+      if (data.huespedId != null) {
+        huespedId = data.huespedId;
+      } else {
+        const huesped: Huesped = {
+          id: ++seqHuesped,
+          nombre: data.huesped!.nombre,
+          documento: data.huesped!.documento ?? null,
+          email: data.huesped!.email ?? null,
+          telefono: data.huesped!.telefono ?? null,
+          notas: data.huesped!.notas ?? null,
+        };
+        huespedes.push(huesped);
+        huespedId = huesped.id;
+      }
       const r = nuevaReserva(
         data.habitacionId,
-        huesped.id,
+        huespedId,
         data.checkin,
         data.checkout,
         "reservada",

@@ -71,26 +71,36 @@ reservasRoutes.post("/", zValidator("json", reservaCreate), async (c) => {
     data.checkout,
   );
 
-  // Alta de huésped + reserva en UNA sola sentencia (CTE), por lo tanto
-  // atómica sin necesidad de transacción interactiva (que el driver HTTP no
-  // soporta). Si la reserva pisa fechas, el EXCLUDE aborta toda la sentencia
-  // (incluido el alta del huésped) → devolvemos 409.
-  const h = data.huesped;
+  // Si la reserva pisa fechas, el EXCLUDE aborta la sentencia → 409.
+  // Caso A: huésped existente (huespedId) → insert simple.
+  // Caso B: huésped nuevo → CTE atómico (alta huésped + reserva).
   try {
-    const rows = (await sql`
-      WITH nuevo_huesped AS (
-        INSERT INTO huespedes (nombre, documento, email, telefono, notas)
-        VALUES (${h.nombre}, ${h.documento ?? null}, ${h.email ?? null},
-                ${h.telefono ?? null}, ${h.notas ?? null})
-        RETURNING id
-      )
-      INSERT INTO reservas
-        (habitacion_id, huesped_id, checkin, checkout, total, notas)
-      SELECT ${data.habitacionId}, nuevo_huesped.id, ${data.checkin},
-             ${data.checkout}, ${total}, ${data.notas ?? null}
-      FROM nuevo_huesped
-      RETURNING *;
-    `) as unknown[];
+    let rows: unknown[];
+    if (data.huespedId != null) {
+      rows = (await sql`
+        INSERT INTO reservas
+          (habitacion_id, huesped_id, checkin, checkout, total, notas)
+        VALUES (${data.habitacionId}, ${data.huespedId}, ${data.checkin},
+                ${data.checkout}, ${total}, ${data.notas ?? null})
+        RETURNING *;
+      `) as unknown[];
+    } else {
+      const h = data.huesped!;
+      rows = (await sql`
+        WITH nuevo_huesped AS (
+          INSERT INTO huespedes (nombre, documento, email, telefono, notas)
+          VALUES (${h.nombre}, ${h.documento ?? null}, ${h.email ?? null},
+                  ${h.telefono ?? null}, ${h.notas ?? null})
+          RETURNING id
+        )
+        INSERT INTO reservas
+          (habitacion_id, huesped_id, checkin, checkout, total, notas)
+        SELECT ${data.habitacionId}, nuevo_huesped.id, ${data.checkin},
+               ${data.checkout}, ${total}, ${data.notas ?? null}
+        FROM nuevo_huesped
+        RETURNING *;
+      `) as unknown[];
+    }
     return c.json(rows[0], 201);
   } catch (err) {
     if (esViolacionOverbooking(err)) {

@@ -59,7 +59,9 @@ export type HuespedUpdate = z.infer<typeof huespedUpdate>;
 export const reservaCreate = z
   .object({
     habitacionId: z.number().int().positive(),
-    huesped: huespedCreate, // crea/asocia huésped en la misma operación
+    // Huésped existente (huespedId) O datos para crear uno nuevo (huesped).
+    huespedId: z.number().int().positive().optional(),
+    huesped: huespedCreate.optional(),
     checkin: fechaISO,
     checkout: fechaISO,
     notas: z.string().max(500).optional(),
@@ -67,6 +69,10 @@ export const reservaCreate = z
   .refine((r) => r.checkout > r.checkin, {
     message: "El check-out debe ser posterior al check-in",
     path: ["checkout"],
+  })
+  .refine((r) => r.huespedId != null || r.huesped != null, {
+    message: "Falta el huésped (existente o nuevo)",
+    path: ["huesped"],
   });
 export type ReservaCreate = z.infer<typeof reservaCreate>;
 

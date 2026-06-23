@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api.js";
+import type { Huesped } from "../../lib/api.js";
 import { addDays } from "../../lib/fechas.js";
 import { Modal } from "../habitaciones/NuevaHabitacion.js";
 
@@ -15,29 +16,49 @@ type Tipo = "reserva" | "mantenimiento";
 export function NuevaReserva({ habitacionId, fechaInicial, onClose }: Props) {
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<Tipo>("reserva");
-  const [huesped, setHuesped] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [huespedSel, setHuespedSel] = useState<Huesped | null>(null);
   const [motivo, setMotivo] = useState("");
   const [checkin, setCheckin] = useState(fechaInicial);
   const [checkout, setCheckout] = useState(addDays(fechaInicial, 1));
   const [error, setError] = useState<string | null>(null);
 
+  const huespedesQ = useQuery({
+    queryKey: ["huespedes"],
+    queryFn: api.huespedes.list,
+    enabled: tipo === "reserva",
+  });
+
+  const term = busqueda.trim().toLowerCase();
+  const matches =
+    term && !huespedSel
+      ? (huespedesQ.data ?? [])
+          .filter((h) => h.nombre.toLowerCase().includes(term))
+          .slice(0, 6)
+      : [];
+
   const crear = useMutation({
-    mutationFn: () =>
-      tipo === "reserva"
-        ? api.reservas.create({
-            habitacionId,
-            huesped: { nombre: huesped },
-            checkin,
-            checkout,
-          })
-        : api.reservas.mantenimiento({
-            habitacionId,
-            checkin,
-            checkout,
-            motivo: motivo || undefined,
-          }),
+    mutationFn: () => {
+      if (tipo === "mantenimiento") {
+        return api.reservas.mantenimiento({
+          habitacionId,
+          checkin,
+          checkout,
+          motivo: motivo || undefined,
+        });
+      }
+      return api.reservas.create({
+        habitacionId,
+        checkin,
+        checkout,
+        ...(huespedSel
+          ? { huespedId: huespedSel.id }
+          : { huesped: { nombre: busqueda.trim() } }),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reservas"] });
+      qc.invalidateQueries({ queryKey: ["huespedes"] });
       onClose();
     },
     onError: (err) => {
@@ -49,7 +70,6 @@ export function NuevaReserva({ habitacionId, fechaInicial, onClose }: Props) {
     },
   });
 
-  // Cotización en vivo (tarifas dinámicas) para reservas de huésped.
   const cotizacionQ = useQuery({
     queryKey: ["cotizar", habitacionId, checkin, checkout],
     queryFn: () => api.reservas.cotizar(habitacionId, checkin, checkout),
@@ -57,14 +77,13 @@ export function NuevaReserva({ habitacionId, fechaInicial, onClose }: Props) {
   });
 
   const input = "mt-1 w-full rounded border border-slate-300 px-2 py-1.5";
-  const faltaDatos = tipo === "reserva" && !huesped;
+  const faltaHuesped = tipo === "reserva" && !huespedSel && !busqueda.trim();
 
   return (
     <Modal
       titulo={tipo === "reserva" ? "Nueva reserva" : "Bloqueo de mantenimiento"}
       onClose={onClose}
     >
-      {/* Selector de tipo */}
       <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
         <TipoBtn activo={tipo === "reserva"} onClick={() => setTipo("reserva")}>
           Reserva
@@ -78,16 +97,71 @@ export function NuevaReserva({ habitacionId, fechaInicial, onClose }: Props) {
       </div>
 
       {tipo === "reserva" ? (
-        <label className="block text-sm">
-          Huésped
-          <input
-            autoFocus
-            value={huesped}
-            onChange={(e) => setHuesped(e.target.value)}
-            className={input}
-            placeholder="Nombre y apellido"
-          />
-        </label>
+        <div className="text-sm">
+          <span className="text-slate-600">Huésped</span>
+          {huespedSel ? (
+            <div className="mt-1 flex items-center justify-between rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5">
+              <span>
+                <span className="font-medium text-slate-800">
+                  {huespedSel.nombre}
+                </span>
+                {huespedSel.documento && (
+                  <span className="text-slate-400"> · {huespedSel.documento}</span>
+                )}
+                <span className="ml-2 text-xs text-emerald-700">existente</span>
+              </span>
+              <button
+                onClick={() => {
+                  setHuespedSel(null);
+                  setBusqueda("");
+                }}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                cambiar
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                autoFocus
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className={input}
+                placeholder="Buscar o escribir nombre nuevo…"
+              />
+              {matches.length > 0 && (
+                <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                  {matches.map((h) => (
+                    <li key={h.id}>
+                      <button
+                        onClick={() => {
+                          setHuespedSel(h);
+                          setBusqueda(h.nombre);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left hover:bg-sky-50"
+                      >
+                        <span className="font-medium text-slate-800">
+                          {h.nombre}
+                        </span>
+                        {(h.documento || h.email) && (
+                          <span className="text-xs text-slate-400">
+                            {" "}
+                            · {h.documento || h.email}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {term && matches.length === 0 && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Sin coincidencias — se creará un huésped nuevo.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <label className="block text-sm">
           Motivo (opcional)
@@ -136,7 +210,7 @@ export function NuevaReserva({ habitacionId, fechaInicial, onClose }: Props) {
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <button
-        disabled={faltaDatos || checkout <= checkin || crear.isPending}
+        disabled={faltaHuesped || checkout <= checkin || crear.isPending}
         onClick={() => {
           setError(null);
           crear.mutate();

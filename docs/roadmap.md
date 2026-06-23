@@ -95,6 +95,35 @@ Ampliación (🔜/⏳):
 
 ---
 
+## Lote de pedidos (triage 2026-06) — bugs e implementaciones
+
+### Bugs
+- ✅ **BUG 1 — huéspedes duplicados**: buscador embebido al reservar (seleccionar
+  huésped existente o crear nuevo); la reserva acepta `huespedId` o datos nuevos.
+  Verificado: seleccionar existente no duplica. (Sol. 2 escanear DNI → ⏳ futuro.)
+- ✅ **BUG 2 — borrar cliente tras cancelar**: ahora bloquea solo si tiene reservas
+  NO canceladas; si solo tiene canceladas, las borra y elimina el huésped. Verificado.
+
+### Implementaciones
+- **Impl 1 — calendario**: 🔜 ver mes completo (viable, el planner ya es N días);
+  🔜 export Excel de reportes con rango de fechas.
+- **Impl 2 — dashboard bajo el calendario**: 🔜 grid check-ins próximos (hoy/mañana),
+  🔜 grid check-outs próximos; ⏳ widget de clima (depende de ubicación del alojamiento
+  → Impl 4). Huésped detalle: 🔜 `mailto:` en email, 🔜 mini-popover en teléfono
+  (WhatsApp wa.me + copiar).
+- **Impl 3 — empresas**: ⏳ módulo nuevo (entidad empresa, asociar huéspedes, facturar
+  a nombre de empresa). Grande; pendiente.
+- **Impl 4 — configuración**:
+  - 🔜 sección Configuración; mover ABM de habitaciones ahí (calendario solo lectura).
+  - 🔜 datos del alojamiento editables (razón social, CUIT, dirección, CP, ciudad,
+    provincia, país, tel, email, logo) → reemplaza el `negocio` hardcodeado del PDF.
+  - 🔜 temas claro/oscuro (Tailwind dark mode + toggle).
+  - ⏳ comprobantes: lista, próximo número, filtro por cliente/empresa, reasociar
+    (anular + reemitir). Requiere PERSISTIR comprobantes (hoy el PDF se genera en el
+    cliente y no se guarda) → pendiente.
+
+---
+
 ## Fase 3 — Escala / completo (⏳)
 - Channel manager (Booking/Airbnb/Expedia), evitar overbooking sincronizando.
 - Housekeeping/mantenimiento: asignación de limpieza, registro de incidencias.

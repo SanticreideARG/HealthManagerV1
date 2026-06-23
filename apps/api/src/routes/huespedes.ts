@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db, desc, eq, habitaciones, huespedes, reservas } from "@suites/db";
+import { and, db, desc, eq, ne, habitaciones, huespedes, reservas } from "@suites/db";
 import { huespedCreate, huespedUpdate } from "@suites/shared";
 
 export const huespedesRoutes = new Hono();
@@ -30,31 +30,27 @@ huespedesRoutes.patch("/:id", zValidator("json", huespedUpdate), async (c) => {
 
 huespedesRoutes.delete("/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  try {
-    const [row] = await db
-      .delete(huespedes)
-      .where(eq(huespedes.id, id))
-      .returning();
-    if (!row) return c.json({ error: "No encontrado" }, 404);
-    return c.json({ ok: true });
-  } catch (err) {
-    // 23503 = FK violation (tiene reservas asociadas)
-    if (
-      typeof err === "object" &&
-      err !== null &&
-      "code" in err &&
-      (err as { code?: string }).code === "23503"
-    ) {
-      return c.json(
-        {
-          error: "en_uso",
-          message: "No se puede eliminar: el huésped tiene reservas.",
-        },
-        409,
-      );
-    }
-    throw err;
+
+  // Solo bloquea si tiene reservas NO canceladas. Las canceladas no cuentan.
+  const activas = await db
+    .select({ id: reservas.id })
+    .from(reservas)
+    .where(and(eq(reservas.huespedId, id), ne(reservas.estado, "cancelada")));
+  if (activas.length > 0) {
+    return c.json(
+      { error: "en_uso", message: "El huésped tiene reservas activas." },
+      409,
+    );
   }
+
+  // Borra sus reservas canceladas (si las hay) y luego el huésped.
+  await db.delete(reservas).where(eq(reservas.huespedId, id));
+  const [row] = await db
+    .delete(huespedes)
+    .where(eq(huespedes.id, id))
+    .returning();
+  if (!row) return c.json({ error: "No encontrado" }, 404);
+  return c.json({ ok: true });
 });
 
 // Historial de estadías del huésped (todas las fechas).
