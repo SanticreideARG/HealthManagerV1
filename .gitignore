@@ -9,5 +9,5 @@ build/
 coverage/
 *.tsbuildinfo
 
-# Función serverless de Vercel generada por esbuild (build:vercel)
-apps/api/api/
+# Build Output API de Vercel generada por build:vercel
+.vercel/

@@ -1,11 +1,9 @@
-import { handle } from "hono/vercel";
+import { getRequestListener } from "@hono/node-server";
 import app from "./app.js";
 
 /**
- * Fuente del entry de función serverless para Vercel. El build (esbuild) la
- * bundlea en `api/index.js` autocontenida (con @suites/db y @suites/shared
- * inlineados), así no hay resolución de módulos del workspace en runtime.
+ * Handler Node (req, res) para la función serverless de Vercel (Build Output
+ * API). El build (scripts/build-vercel.mjs) lo bundlea con esbuild en
+ * .vercel/output/functions/api.func/index.js, autocontenido.
  */
-export const config = { runtime: "nodejs" };
-
-export default handle(app);
+export default getRequestListener(app.fetch);
