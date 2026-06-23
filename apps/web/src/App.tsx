@@ -12,6 +12,7 @@ import { AccionesReserva } from "./features/reservas/AccionesReserva.js";
 import { HuespedesPage } from "./features/huespedes/HuespedesPage.js";
 import { ReportesPage } from "./features/reportes/ReportesPage.js";
 import { TarifasPage } from "./features/tarifas/TarifasPage.js";
+import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
 
 type Vista = "calendario" | "huespedes" | "reportes" | "tarifas";
 
@@ -174,6 +175,8 @@ function CalendarioView() {
           />
         </div>
       )}
+
+      {habitacionesQ.data && <ProximosPanel />}
 
       {habitacionSel && (
         <EditarHabitacion

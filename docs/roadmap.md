@@ -107,10 +107,10 @@ Ampliación (🔜/⏳):
 ### Implementaciones
 - **Impl 1 — calendario**: 🔜 ver mes completo (viable, el planner ya es N días);
   🔜 export Excel de reportes con rango de fechas.
-- **Impl 2 — dashboard bajo el calendario**: 🔜 grid check-ins próximos (hoy/mañana),
-  🔜 grid check-outs próximos; ⏳ widget de clima (depende de ubicación del alojamiento
-  → Impl 4). Huésped detalle: 🔜 `mailto:` en email, 🔜 mini-popover en teléfono
-  (WhatsApp wa.me + copiar).
+- **Impl 2 — dashboard bajo el calendario**: ✅ grid check-ins próximos (hoy/mañana),
+  ✅ grid check-outs próximos; ⏳ widget de clima (placeholder; depende de ubicación
+  del alojamiento → Impl 4). Huésped detalle: ✅ `mailto:` en email, ✅ popover en
+  teléfono (WhatsApp wa.me + copiar). Verificado en mock.
 - **Impl 3 — empresas**: ⏳ módulo nuevo (entidad empresa, asociar huéspedes, facturar
   a nombre de empresa). Grande; pendiente.
 - **Impl 4 — configuración**:
