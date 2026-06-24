@@ -10,3 +10,110 @@ body {
   background: #f8fafc;
   color: #0f172a;
 }
+
+/* ============================================================
+   Tema oscuro — overrides centralizados (clase .dark en <html>).
+   Evita tener que poner dark: en cada componente; remapea las
+   utilidades de color que usa la app. Reglas sin @layer → ganan
+   sobre las utilidades de Tailwind.
+   ============================================================ */
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background: #0b1220;
+  color: #e2e8f0;
+}
+
+/* Superficies */
+.dark .bg-white {
+  background-color: #1e293b;
+}
+.dark .bg-slate-50,
+.dark .bg-slate-50\/60,
+.dark .bg-slate-50\/80 {
+  background-color: #172033;
+}
+.dark .bg-slate-100 {
+  background-color: #334155;
+}
+
+/* Acentos suaves (fondos de avisos / chips) */
+.dark .bg-amber-50 {
+  background-color: #422006;
+}
+.dark .bg-emerald-50 {
+  background-color: #052e1b;
+}
+.dark .bg-rose-50 {
+  background-color: #4c0519;
+}
+.dark .bg-amber-100 {
+  background-color: #78350f;
+}
+.dark .bg-emerald-100 {
+  background-color: #064e3b;
+}
+.dark .bg-rose-100 {
+  background-color: #881337;
+}
+.dark .bg-sky-50 {
+  background-color: #0c2a45;
+}
+
+/* Texto */
+.dark .text-slate-800 {
+  color: #f1f5f9;
+}
+.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+.dark .text-slate-600 {
+  color: #cbd5e1;
+}
+.dark .text-slate-500 {
+  color: #94a3b8;
+}
+.dark .text-slate-400 {
+  color: #64748b;
+}
+
+/* Bordes */
+.dark .border-slate-100 {
+  border-color: #1e293b;
+}
+.dark .border-slate-200 {
+  border-color: #334155;
+}
+.dark .border-slate-300 {
+  border-color: #475569;
+}
+
+/* Formularios */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Hovers de filas/botones claros */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #334155;
+}
+.dark .hover\:bg-sky-50:hover {
+  background-color: #0c2a45;
+}
+.dark .hover\:bg-rose-50:hover {
+  background-color: #4c0519;
+}
+
+/* Cabeceras de tabla y divisores */
+.dark .divide-slate-100 > * + * {
+  border-color: #1e293b;
+}

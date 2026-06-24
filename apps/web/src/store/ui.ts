@@ -10,10 +10,29 @@ interface UiState {
   avanzar: (dias: number) => void;
   verMes: () => void; // ancla = 1° del mes actual, diasVisibles = días del mes
   verQuincena: () => void; // 14 días desde hoy
+  tema: "light" | "dark";
+  toggleTema: () => void;
 }
 
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Lee el tema guardado (o el del sistema) y aplica la clase en <html>. */
+function temaInicial(): "light" | "dark" {
+  const guardado =
+    typeof localStorage !== "undefined" ? localStorage.getItem("tema") : null;
+  const tema: "light" | "dark" =
+    guardado === "dark" || guardado === "light"
+      ? guardado
+      : typeof window !== "undefined" &&
+          window.matchMedia?.("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.toggle("dark", tema === "dark");
+  }
+  return tema;
 }
 
 export const useUi = create<UiState>((set) => ({
@@ -39,4 +58,12 @@ export const useUi = create<UiState>((set) => ({
       };
     }),
   verQuincena: () => set({ fechaAncla: hoyISO(), diasVisibles: 14 }),
+  tema: temaInicial(),
+  toggleTema: () =>
+    set((s) => {
+      const tema = s.tema === "dark" ? "light" : "dark";
+      localStorage.setItem("tema", tema);
+      document.documentElement.classList.toggle("dark", tema === "dark");
+      return { tema };
+    }),
 }));

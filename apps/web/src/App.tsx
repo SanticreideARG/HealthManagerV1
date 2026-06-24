@@ -22,6 +22,7 @@ type Vista =
 
 export function App() {
   const [vista, setVista] = useState<Vista>("calendario");
+  const { tema, toggleTema } = useUi();
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -32,7 +33,16 @@ export function App() {
         </div>
       )}
       <header className="mb-4">
-        <h1 className="text-2xl font-bold text-slate-800">Suites Manager</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-slate-800">Suites Manager</h1>
+          <button
+            onClick={toggleTema}
+            title="Cambiar tema"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            {tema === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+          </button>
+        </div>
         <nav className="mt-3 flex gap-1 border-b border-slate-200">
           <Tab activa={vista === "calendario"} onClick={() => setVista("calendario")}>
             Calendario

@@ -119,7 +119,9 @@ Ampliación (🔜/⏳):
     estos datos (antes hardcodeados). Verificado: API (Neon) + UI (mock).
   - ✅ **4-B** ABM de habitaciones en Configuración (lista + alta/edición/baja). El
     calendario quedó solo lectura (sin botón crear ni edición por click). Verificado.
-  - 🔜 **4-C** temas claro/oscuro (Tailwind dark mode + toggle).
+  - ✅ **4-C** temas claro/oscuro: modo oscuro por clase `.dark` con overrides
+    centralizados en index.css (sin tocar cada componente) + toggle en el header,
+    persistido en localStorage (respeta preferencia del sistema). Verificado.
   - ⏳ comprobantes: lista, próximo número, filtro por cliente/empresa, reasociar
     (anular + reemitir). Requiere PERSISTIR comprobantes (hoy el PDF se genera en el
     cliente y no se guarda) → pendiente.
