@@ -127,6 +127,22 @@ export const tarifaReglaUpdate = z.object({
 });
 export type TarifaReglaUpdate = z.infer<typeof tarifaReglaUpdate>;
 
+// ---------- Configuración del alojamiento ----------
+export const configUpdate = z.object({
+  nombre: z.string().min(1).max(120).optional(),
+  razonSocial: z.string().max(160).nullable().optional(),
+  cuit: z.string().max(20).nullable().optional(),
+  direccion: z.string().max(200).nullable().optional(),
+  cp: z.string().max(20).nullable().optional(),
+  ciudad: z.string().max(120).nullable().optional(),
+  provincia: z.string().max(120).nullable().optional(),
+  pais: z.string().max(120).nullable().optional(),
+  telefono: z.string().max(40).nullable().optional(),
+  email: z.string().max(160).nullable().optional(),
+  logoUrl: z.string().max(1000).nullable().optional(),
+});
+export type ConfigUpdate = z.infer<typeof configUpdate>;
+
 // ---------- Pagos ----------
 export const pagoCreate = z.object({
   reservaId: z.number().int().positive(),

@@ -5,6 +5,7 @@ import type {
   ReservaListItem,
   ReporteResumen,
   TarifaRegla,
+  Config,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -83,6 +84,22 @@ const reservas: ReservaInterna[] = [
 ];
 
 const delay = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 150));
+
+// ---- Configuración (mock) ----
+let configMock: Config = {
+  id: 1,
+  nombre: "Suites Manager",
+  razonSocial: "Mi Alojamiento S.R.L.",
+  cuit: "30-00000000-0",
+  direccion: "Av. Siempreviva 742",
+  cp: null,
+  ciudad: null,
+  provincia: null,
+  pais: "Argentina",
+  telefono: "+54 9 11 0000-0000",
+  email: "reservas@mialojamiento.com",
+  logoUrl: null,
+};
 
 // ---- Tarifas dinámicas (mock) ----
 let seqRegla = 0;
@@ -258,6 +275,13 @@ export const mockApi: ApiClient = {
       const i = tarifaReglas.findIndex((x) => x.id === id);
       if (i >= 0) tarifaReglas.splice(i, 1);
       return delay({ ok: true } as const);
+    },
+  },
+  config: {
+    get: () => delay(configMock),
+    update: (data) => {
+      configMock = { ...configMock, ...data };
+      return delay(configMock);
     },
   },
   reportes: {

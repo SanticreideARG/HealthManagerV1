@@ -39,6 +39,21 @@ export interface HistorialItem {
   total: string;
 }
 
+export interface Config {
+  id: number;
+  nombre: string;
+  razonSocial: string | null;
+  cuit: string | null;
+  direccion: string | null;
+  cp: string | null;
+  ciudad: string | null;
+  provincia: string | null;
+  pais: string | null;
+  telefono: string | null;
+  email: string | null;
+  logoUrl: string | null;
+}
+
 export interface TarifaRegla {
   id: number;
   nombre: string;
@@ -115,6 +130,10 @@ export interface ApiClient {
   };
   reportes: {
     resumen: (desde: string, hasta: string) => Promise<ReporteResumen>;
+  };
+  config: {
+    get: () => Promise<Config | null>;
+    update: (data: import("@suites/shared").ConfigUpdate) => Promise<Config>;
   };
   tarifas: {
     list: () => Promise<TarifaRegla[]>;

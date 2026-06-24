@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api.js";
 import type { ReservaListItem } from "../../lib/api.js";
 import { Modal } from "../habitaciones/NuevaHabitacion.js";
@@ -16,6 +16,7 @@ export function AccionesReserva({
   const qc = useQueryClient();
   const refrescar = () => qc.invalidateQueries({ queryKey: ["reservas"] });
   const [generando, setGenerando] = useState(false);
+  const configQ = useQuery({ queryKey: ["config"], queryFn: api.config.get });
   const [editando, setEditando] = useState(false);
   const [checkinEd, setCheckinEd] = useState(reserva.checkin);
   const [checkoutEd, setCheckoutEd] = useState(reserva.checkout);
@@ -30,6 +31,19 @@ export function AccionesReserva({
       const { armarDatos, descargarComprobante } = await import(
         "../facturacion/Comprobante.js"
       );
+      const cfg = configQ.data;
+      const negocio = cfg
+        ? {
+            nombre: cfg.nombre,
+            razonSocial: cfg.razonSocial ?? "",
+            cuit: cfg.cuit ?? "",
+            domicilio: [cfg.direccion, cfg.cp, cfg.ciudad, cfg.provincia, cfg.pais]
+              .filter(Boolean)
+              .join(", "),
+            telefono: cfg.telefono ?? "",
+            email: cfg.email ?? "",
+          }
+        : undefined;
       await descargarComprobante(
         armarDatos({
           reservaId: reserva.id,
@@ -39,6 +53,7 @@ export function AccionesReserva({
           checkout: reserva.checkout,
           total: Number(reserva.total),
         }),
+        negocio,
       );
     } finally {
       setGenerando(false);

@@ -8,6 +8,7 @@ import type {
   BloqueoCreate,
   TarifaReglaCreate,
   TarifaReglaUpdate,
+  ConfigUpdate,
 } from "@suites/shared";
 import type {
   ApiClient,
@@ -18,6 +19,7 @@ import type {
   ReporteResumen,
   TarifaRegla,
   Cotizacion,
+  Config,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -32,6 +34,7 @@ export type {
   TarifaRegla,
   Cotizacion,
   ReporteResumen,
+  Config,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -87,6 +90,14 @@ const realApi: ApiClient = {
       request<ReporteResumen>(
         `/reportes/resumen?desde=${desde}&hasta=${hasta}`,
       ),
+  },
+  config: {
+    get: () => request<Config | null>("/config"),
+    update: (data: ConfigUpdate) =>
+      request<Config>("/config", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
   tarifas: {
     list: () => request<TarifaRegla[]>("/tarifas"),

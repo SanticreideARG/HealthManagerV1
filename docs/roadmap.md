@@ -114,13 +114,50 @@ Ampliación (🔜/⏳):
 - **Impl 3 — empresas**: ⏳ módulo nuevo (entidad empresa, asociar huéspedes, facturar
   a nombre de empresa). Grande; pendiente.
 - **Impl 4 — configuración**:
-  - 🔜 sección Configuración; mover ABM de habitaciones ahí (calendario solo lectura).
-  - 🔜 datos del alojamiento editables (razón social, CUIT, dirección, CP, ciudad,
-    provincia, país, tel, email, logo) → reemplaza el `negocio` hardcodeado del PDF.
-  - 🔜 temas claro/oscuro (Tailwind dark mode + toggle).
+  - ✅ **4-A** sección Configuración + datos del alojamiento editables (tabla `config`
+    fila única, migración 0004; GET/PUT /config; formulario). El comprobante PDF ya usa
+    estos datos (antes hardcodeados). Verificado: API (Neon) + UI (mock).
+  - 🔜 **4-B** mover ABM de habitaciones a Configuración (calendario solo lectura).
+  - 🔜 **4-C** temas claro/oscuro (Tailwind dark mode + toggle).
   - ⏳ comprobantes: lista, próximo número, filtro por cliente/empresa, reasociar
     (anular + reemitir). Requiere PERSISTIR comprobantes (hoy el PDF se genera en el
     cliente y no se guarda) → pendiente.
+
+---
+
+## Estratégicos (análisis competitivo) — priorización
+
+> ⭐ prioritario (corto/mediano) · 🔌 integración (requiere credenciales externas) ·
+> ⏳ opción / mayor alcance.
+
+### ⭐ Prioritarios
+- ⭐ **Roles y permisos** (administrador / recepcionista / auditor) + auth
+  (Better Auth). Base de la separación de funciones y de la auditoría.
+- ⭐ **Tests automatizados** (vitest/node:test): unitarios + integración. Críticos:
+  anti-overbooking con reservas concurrentes, cancelaciones, cálculo de tarifas.
+- ⭐ **Reportes ampliados**: sumar **cancelaciones** y **estadía promedio** a los
+  actuales (ocupación, ingresos, frecuentes). Rápido, sobre lo ya hecho.
+- ⭐ **Housekeeping + historial de mantenimiento por unidad**: estado de limpieza por
+  habitación; registrar e historiar mantenimientos/incidencias por unidad (extiende
+  los bloqueos de mantenimiento ya existentes).
+- ⭐ **Dashboard de KPIs**: ocupación / ingresos / reservas activas en tiempo real
+  (amplía ProximosPanel + Reportes).
+- ⭐ **Pagos** (registro): efectivo/transferencia/QR con estado (pendiente/parcial/
+  completo). La tabla `pagos` ya existe sin usar. MercadoPago = paso siguiente (🔌).
+- ⭐ **Auditoría / logs firmados**: tabla append-only con **hash encadenado** (hash del
+  registro previo + datos + timestamp) por operación (alta/modificación/cancelación).
+
+### 🔌 Integraciones (requieren servicios/credenciales externas)
+- 🔌 **Notificaciones**: email (Resend) + WhatsApp (Evolution API) — confirmación de
+  reserva, recordatorio de check-in, encuesta post-estadía.
+- 🔌 **Pagos electrónicos**: MercadoPago (checkout + QR interoperable + webhooks).
+
+### ⏳ Opciones / mayor alcance (ver Fase 3)
+- ⏳ **Channel Manager** (Booking/Airbnb/Expedia) — anti doble-reserva sincronizando.
+- ⏳ **Multi-sucursal** — gestión centralizada; impacta el modelo (scoping por sucursal).
+- ⏳ **AFIP / facturación electrónica** — WSFE + certificados.
+- ⏳ **Backups**: Neon ya provee backups automáticos / PITR en su plan; estrategia
+  adicional (export periódico a almacenamiento externo) = opcional.
 
 ---
 

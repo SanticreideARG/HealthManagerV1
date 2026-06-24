@@ -6,8 +6,17 @@ import {
   StyleSheet,
   pdf,
 } from "@react-pdf/renderer";
-import { negocio } from "../../lib/negocio.js";
+import { negocio as negocioDefault } from "../../lib/negocio.js";
 import { diffDays } from "../../lib/fechas.js";
+
+export interface Negocio {
+  nombre: string;
+  razonSocial: string;
+  cuit: string;
+  domicilio: string;
+  telefono: string;
+  email: string;
+}
 
 export interface DatosComprobante {
   numero: string;
@@ -84,7 +93,13 @@ const styles = StyleSheet.create({
   },
 });
 
-export function ComprobanteDoc({ datos }: { datos: DatosComprobante }) {
+export function ComprobanteDoc({
+  datos,
+  negocio = negocioDefault,
+}: {
+  datos: DatosComprobante;
+  negocio?: Negocio;
+}) {
   return (
     <Document title={`Comprobante ${datos.numero}`}>
       <Page size="A4" style={styles.page}>
@@ -191,8 +206,13 @@ export function armarDatos(input: {
 }
 
 /** Genera el PDF y dispara la descarga en el navegador. */
-export async function descargarComprobante(datos: DatosComprobante) {
-  const blob = await pdf(<ComprobanteDoc datos={datos} />).toBlob();
+export async function descargarComprobante(
+  datos: DatosComprobante,
+  negocio?: Negocio,
+) {
+  const blob = await pdf(
+    <ComprobanteDoc datos={datos} negocio={negocio} />,
+  ).toBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

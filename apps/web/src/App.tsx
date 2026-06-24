@@ -13,8 +13,14 @@ import { HuespedesPage } from "./features/huespedes/HuespedesPage.js";
 import { ReportesPage } from "./features/reportes/ReportesPage.js";
 import { TarifasPage } from "./features/tarifas/TarifasPage.js";
 import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
+import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
 
-type Vista = "calendario" | "huespedes" | "reportes" | "tarifas";
+type Vista =
+  | "calendario"
+  | "huespedes"
+  | "reportes"
+  | "tarifas"
+  | "config";
 
 export function App() {
   const [vista, setVista] = useState<Vista>("calendario");
@@ -42,6 +48,9 @@ export function App() {
           <Tab activa={vista === "tarifas"} onClick={() => setVista("tarifas")}>
             Tarifas
           </Tab>
+          <Tab activa={vista === "config"} onClick={() => setVista("config")}>
+            Configuración
+          </Tab>
         </nav>
       </header>
 
@@ -49,6 +58,7 @@ export function App() {
       {vista === "huespedes" && <HuespedesPage />}
       {vista === "reportes" && <ReportesPage />}
       {vista === "tarifas" && <TarifasPage />}
+      {vista === "config" && <ConfiguracionPage />}
     </div>
   );
 }

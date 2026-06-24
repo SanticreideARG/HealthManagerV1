@@ -113,6 +113,21 @@ export const tarifaReglas = pgTable("tarifa_reglas", {
     .defaultNow(),
 });
 
+export const config = pgTable("config", {
+  id: integer("id").primaryKey().default(1),
+  nombre: varchar("nombre", { length: 120 }).notNull().default("Mi Alojamiento"),
+  razonSocial: varchar("razon_social", { length: 160 }),
+  cuit: varchar("cuit", { length: 20 }),
+  direccion: varchar("direccion", { length: 200 }),
+  cp: varchar("cp", { length: 20 }),
+  ciudad: varchar("ciudad", { length: 120 }),
+  provincia: varchar("provincia", { length: 120 }),
+  pais: varchar("pais", { length: 120 }),
+  telefono: varchar("telefono", { length: 40 }),
+  email: varchar("email", { length: 160 }),
+  logoUrl: text("logo_url"),
+});
+
 export type Habitacion = typeof habitaciones.$inferSelect;
 export type Huesped = typeof huespedes.$inferSelect;
 export type Reserva = typeof reservas.$inferSelect;
