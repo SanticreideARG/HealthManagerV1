@@ -13,13 +13,21 @@ import { auth } from "./auth.js";
 export const app = new Hono();
 
 app.use("*", logger());
-app.use("*", cors());
+// CORS con credenciales: refleja el origin (necesario para enviar cookies de
+// sesión cross-origin entre la web y la API).
+app.use(
+  "*",
+  cors({
+    origin: (origin) => origin ?? "*",
+    credentials: true,
+  }),
+);
 
 app.get("/", (c) => c.json({ ok: true, service: "suites-manager-api" }));
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-// Better Auth (todas las rutas /auth/*).
-app.on(["GET", "POST"], "/auth/*", (c) => auth.handler(c.req.raw));
+// Better Auth (rutas bajo /api/auth).
+app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/habitaciones", habitacionesRoutes);
 app.route("/reservas", reservasRoutes);

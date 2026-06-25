@@ -12,6 +12,8 @@ import { ReportesPage } from "./features/reportes/ReportesPage.js";
 import { TarifasPage } from "./features/tarifas/TarifasPage.js";
 import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
 import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
+import { useSession, signOut } from "./lib/auth.js";
+import { LoginPage } from "./features/auth/LoginPage.js";
 
 type Vista =
   | "calendario"
@@ -23,6 +25,16 @@ type Vista =
 export function App() {
   const [vista, setVista] = useState<Vista>("calendario");
   const { tema, toggleTema } = useUi();
+  const { data: session, isPending } = useSession();
+
+  // En modo demo (sin backend) se omite la autenticación.
+  const requiereAuth = !usandoMock;
+  if (requiereAuth && isPending) {
+    return <div className="p-8 text-sm text-slate-400">Cargando…</div>;
+  }
+  if (requiereAuth && !session) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -35,13 +47,28 @@ export function App() {
       <header className="mb-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Suites Manager</h1>
-          <button
-            onClick={toggleTema}
-            title="Cambiar tema"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            {tema === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
-          </button>
+          <div className="flex items-center gap-2">
+            {session && (
+              <>
+                <span className="hidden text-sm text-slate-500 sm:inline">
+                  {session.user.email}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Salir
+                </button>
+              </>
+            )}
+            <button
+              onClick={toggleTema}
+              title="Cambiar tema"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {tema === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+            </button>
+          </div>
         </div>
         <nav className="mt-3 flex gap-1 border-b border-slate-200">
           <Tab activa={vista === "calendario"} onClick={() => setVista("calendario")}>

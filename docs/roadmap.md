@@ -161,9 +161,14 @@ Ampliación (🔜/⏳):
     `role` default 'cliente') + config (`auth.ts`) + handler en Hono (`/auth/*`).
     **Signup/login verificados contra Neon** — el driver neon-http funciona, NO hizo
     falta `pg` (Better Auth no usó transacciones interactivas en email/password).
-  - 🔜 (3) login en el panel + sesión en el front + proteger rutas. CORS: para cookies
-    cross-origin (web↔api) configurar cors con `credentials` + `trustedOrigins`.
-    Vercel: agregar `BETTER_AUTH_SECRET` (y `BETTER_AUTH_URL`) al proyecto API.
+  - ✅ (3) login en el panel: cliente `better-auth/react` (lib/auth.ts), `LoginPage`
+    (ingresar/registrar), App gatea el panel con `useSession` (en modo mock se omite),
+    header con email + "Salir". CORS con `credentials` + origin reflejado + Better Auth
+    `trustedOrigins`; cookies SameSite=None;Secure en prod (https), lax en local.
+    basePath movido a `/api/auth` (default del cliente). Verificado en local (web 5182
+    + API 3001): login → panel → signout. ⚠️ Vercel: agregar `BETTER_AUTH_SECRET`,
+    `BETTER_AUTH_URL` (=URL del API) y `WEB_URL` (=URL de la web, para trustedOrigins)
+    al proyecto API; verificar cookies cross-site en prod.
   - 🔜 (4) gating por rol según la matriz (middleware en API + ocultar tabs en front).
     Promover el primer admin: `UPDATE auth_user SET role='admin' WHERE email=...`.
   - 🔜 (5) Google OAuth (clientes del portal).

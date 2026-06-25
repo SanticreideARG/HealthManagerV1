@@ -15,6 +15,8 @@ import {
  * Nota: si Better Auth requiere transacciones interactivas (que el driver
  * neon-http no soporta), se le dará una instancia Drizzle propia con `pg`.
  */
+const esProd = (process.env.BETTER_AUTH_URL ?? "").startsWith("https");
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -36,7 +38,20 @@ export const auth = betterAuth({
       },
     },
   },
-  basePath: "/auth",
+  // basePath default de Better Auth → el cliente funciona sin config extra.
+  basePath: "/api/auth",
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
+  trustedOrigins: [
+    "http://localhost:5180",
+    "http://localhost:5182",
+    "http://localhost:5173",
+    ...(process.env.WEB_URL ? [process.env.WEB_URL] : []),
+  ],
+  // En prod (https) la web y la API están en dominios distintos (cross-site):
+  // las cookies necesitan SameSite=None; Secure. En local (http) se deja el
+  // default (lax) que funciona porque localhost:* es same-site.
+  advanced: esProd
+    ? { defaultCookieAttributes: { sameSite: "none", secure: true } }
+    : undefined,
 });
