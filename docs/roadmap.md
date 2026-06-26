@@ -130,8 +130,8 @@ Ampliación (🔜/⏳):
 
 ## Lote de pedidos (triage 2026-06-26) — ⏳ asentado, sin implementar
 
-> Definido a alto nivel; faltan decisiones de detalle (ver cuestionario al pie de
-> cada ítem). No se encara todavía.
+> Definido a alto nivel; **decisiones de detalle cerradas** (cuestionario 2026-06-26,
+> ver "Decisiones" en cada ítem). No se encara todavía.
 
 ### Tarifas — unificar gestión en un solo lugar (⏳)
 - ⏳ **Ajuste de precios base desde Tarifas**: un **segundo cuadro que irá PRIMERO**
@@ -147,9 +147,16 @@ Ampliación (🔜/⏳):
   RESTA* (las otras suman). Este catálogo alimenta los recargos sobre huéspedes
   alojados (ver Huéspedes). Relacionado con "consumos extras" ya pendiente en la ficha.
 
-  **A definir:** ¿el catálogo de cargos es fijo/configurable? ¿el monto fijo de las
-  reglas convive con coeficiente o es excluyente por regla? ¿editar la base recalcula
-  reservas existentes o solo afecta nuevas? ¿Bonificación se expresa en $ o %?
+  **Decisiones (2026-06-26):**
+  - Editar la base **solo afecta reservas nuevas**; las existentes quedan congeladas.
+  - Cada regla es **de un solo tipo**: coeficiente (×) **o** monto fijo (+/- $),
+    excluyente por regla (no ambos a la vez).
+  - El catálogo de cargos extra es **CRUD configurable** por el admin (concepto +
+    precio unitario por ítem).
+  - Las **4 categorías son fijas** (Servicios, Consumos, Cargos, Bonificaciones);
+    Bonificaciones siempre resta.
+  - Bonificaciones se expresan en **monto fijo $** (precio unitario × cantidad),
+    no en porcentaje.
 
 ### Huéspedes — separar "alojados" de "histórico" (⏳)
 - ⏳ **Completar la ficha** con los datos aún ⏳ del roadmap (ver "Huéspedes (ficha)"
@@ -163,22 +170,36 @@ Ampliación (🔜/⏳):
   2. **Histórico de Clientes** (abajo, el listado actual renombrado): todos los
      huéspedes, **ordenado por último check-in realizado** (desc).
 
-  **A definir:** ¿"alojado actualmente" = reserva en estado `ocupada`? ¿los recargos
-  se acumulan en la reserva activa y salen en el comprobante de check-out? ¿se pueden
-  cargar/editar recargos después del check-out?
+  **Decisiones (2026-06-26):**
+  - "Alojado actualmente" = huésped con una reserva en estado **`ocupada`** (check-in
+    hecho, sin check-out).
+  - Los recargos se acumulan **sobre la reserva activa** (cada estadía tiene sus
+    consumos) y salen en el comprobante de check-out.
+  - Los recargos se **congelan al hacer check-out** (no se editan después, para no
+    alterar comprobantes emitidos).
+  - **Ficha por fases** (recomendación aceptada): **Fase A** primero — tipo y número
+    de documento, nacionalidad, fecha de nacimiento (alto valor operativo / legal).
+    **Fase B** después — resto de campos ⏳ (dirección, estado civil, motivo de viaje,
+    info de pago, vehículo, preferencias, acompañantes, foto/scan del documento).
 
 ### Calendario — datos del cliente (⏳)
 - ⏳ **Botón adicional "Ver cliente"** en las acciones de una reserva (junto a
   modificar fechas y descargar/generar comprobante): muestra los datos del huésped
   asociado a esa reserva.
 
+  **Decisión (2026-06-26):** se muestra en un **panel/sección dentro del mismo modal**
+  de la reserva (sin navegar fuera; mantiene el contexto).
+
 ### Configuración › Habitaciones — características de la unidad (⏳)
 - ⏳ **"Características" de las unidades**: poder enumerar detalles por habitación
   (baño privado, TV, aire acondicionado, m², etc.). Coincide con la nota de diseño de
   "amenities" ya registrada (tabla `habitacion_amenities` o columna `JSONB amenities`).
 
-  **A definir:** ¿características = catálogo configurable reutilizable, o texto libre
-  por unidad? ¿booleanas (tiene/no tiene) o con valor (m² = número, camas = texto)?
+  **Decisiones (2026-06-26):**
+  - **Catálogo configurable reutilizable** (se define una vez y se asigna por unidad),
+    no texto libre. Sirve también para la futura landing/portal.
+  - **Mixto**: cada característica define su tipo — **booleana** (TV: sí/no) o
+    **con valor** (m²: número, disposición de camas: texto).
 
 ---
 
