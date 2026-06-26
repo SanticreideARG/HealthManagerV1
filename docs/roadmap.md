@@ -128,6 +128,60 @@ Ampliación (🔜/⏳):
 
 ---
 
+## Lote de pedidos (triage 2026-06-26) — ⏳ asentado, sin implementar
+
+> Definido a alto nivel; faltan decisiones de detalle (ver cuestionario al pie de
+> cada ítem). No se encara todavía.
+
+### Tarifas — unificar gestión en un solo lugar (⏳)
+- ⏳ **Ajuste de precios base desde Tarifas**: un **segundo cuadro que irá PRIMERO**
+  (antes del CRUD de reglas) para editar la **tarifa base de cada habitación** sin
+  ir a Configuración. Objetivo: centralizar toda la gestión de precios en la pestaña
+  Tarifas. (La tarifa base ya vive en `habitaciones.tarifaBase`; sería editarla acá.)
+- ⏳ **Reglas por monto fijo** además de coeficiente: hoy `tarifa_reglas.factor`
+  es solo multiplicador (1.5 = +50%). Sumar la opción de **monto fijo** (+/- $X por
+  noche) como tipo de ajuste alternativo.
+- ⏳ **Cargos extra (CRUD nuevo)**: recargos por servicios adicionales. Campos:
+  **categoría, concepto, cantidad, precio unitario**. Categorías:
+  **Servicios, Consumos, Cargos, Bonificaciones** — *Bonificaciones es la única que
+  RESTA* (las otras suman). Este catálogo alimenta los recargos sobre huéspedes
+  alojados (ver Huéspedes). Relacionado con "consumos extras" ya pendiente en la ficha.
+
+  **A definir:** ¿el catálogo de cargos es fijo/configurable? ¿el monto fijo de las
+  reglas convive con coeficiente o es excluyente por regla? ¿editar la base recalcula
+  reservas existentes o solo afecta nuevas? ¿Bonificación se expresa en $ o %?
+
+### Huéspedes — separar "alojados" de "histórico" (⏳)
+- ⏳ **Completar la ficha** con los datos aún ⏳ del roadmap (ver "Huéspedes (ficha)"
+  arriba: datos personales, documentación/procedencia, info de pago, adicional).
+- ⏳ **Cargos extra sobre el huésped**: aplicar recargos (servicios/consumos del
+  catálogo de Tarifas) **solo a clientes activos** = los que hicieron **check-in**.
+- ⏳ **Reestructura de la pestaña Huéspedes** en dos cuadros:
+  1. **Huéspedes** (arriba, nuevo): solo los **alojados actualmente** (con check-in
+     hecho, sin check-out). Permite **modificar datos** y **cargar recargos**
+     (servicios/consumos).
+  2. **Histórico de Clientes** (abajo, el listado actual renombrado): todos los
+     huéspedes, **ordenado por último check-in realizado** (desc).
+
+  **A definir:** ¿"alojado actualmente" = reserva en estado `ocupada`? ¿los recargos
+  se acumulan en la reserva activa y salen en el comprobante de check-out? ¿se pueden
+  cargar/editar recargos después del check-out?
+
+### Calendario — datos del cliente (⏳)
+- ⏳ **Botón adicional "Ver cliente"** en las acciones de una reserva (junto a
+  modificar fechas y descargar/generar comprobante): muestra los datos del huésped
+  asociado a esa reserva.
+
+### Configuración › Habitaciones — características de la unidad (⏳)
+- ⏳ **"Características" de las unidades**: poder enumerar detalles por habitación
+  (baño privado, TV, aire acondicionado, m², etc.). Coincide con la nota de diseño de
+  "amenities" ya registrada (tabla `habitacion_amenities` o columna `JSONB amenities`).
+
+  **A definir:** ¿características = catálogo configurable reutilizable, o texto libre
+  por unidad? ¿booleanas (tiene/no tiene) o con valor (m² = número, camas = texto)?
+
+---
+
 ## Estratégicos (análisis competitivo) — priorización
 
 > ⭐ prioritario (corto/mediano) · 🔌 integración (requiere credenciales externas) ·
