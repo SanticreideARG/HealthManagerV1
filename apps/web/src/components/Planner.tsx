@@ -11,11 +11,11 @@ import {
 const COL_LABEL = "180px";
 
 const colorReserva: Record<EstadoReserva, string> = {
-  reservada: "bg-amber-400 text-amber-950",
-  ocupada: "bg-emerald-500 text-white",
-  checkout: "bg-slate-300 text-slate-700",
+  reservada: "bg-amber-400 text-amber-950 ring-1 ring-amber-500/50",
+  ocupada: "bg-emerald-500 text-white ring-1 ring-emerald-600/50",
+  checkout: "bg-slate-500 text-white ring-1 ring-slate-600/50",
   cancelada: "hidden",
-  mantenimiento: "bg-rose-500 text-white",
+  mantenimiento: "bg-rose-500 text-white ring-1 ring-rose-600/50",
 };
 
 /** Texto de la barra: nombre del huésped o "Mantenimiento" para bloqueos. */
@@ -57,7 +57,7 @@ export function Planner({
   }, [reservas]);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div className="card overflow-x-auto">
       <div className="min-w-max">
         {/* Cabecera de días */}
         <div className="grid" style={{ gridTemplateColumns: gridCols }}>
@@ -130,7 +130,7 @@ export function Planner({
                   key={r.id}
                   onClick={() => onClickReserva?.(r)}
                   title={`${etiqueta(r)} · ${r.checkin} → ${r.checkout}`}
-                  className={`z-10 m-1 flex items-center truncate rounded px-2 text-xs font-medium shadow-sm ${colorReserva[r.estado]}`}
+                  className={`z-10 m-1 flex items-center truncate rounded-md px-2 text-xs font-semibold shadow-sm transition hover:brightness-105 ${colorReserva[r.estado]}`}
                   style={{
                     gridRow: 1,
                     gridColumnStart: 2 + start,

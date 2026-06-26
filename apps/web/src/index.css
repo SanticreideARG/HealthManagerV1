@@ -1,41 +1,174 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Design tokens — un solo lugar para colores de superficie,
+   bordes, texto y acción. Light por defecto; .dark los remapea.
+   ============================================================ */
 :root {
   color-scheme: light;
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-soft: #475569;
+  --muted: #64748b;
+  --primary: #0f172a;
+  --primary-fg: #ffffff;
+  --primary-hover: #1e293b;
+  --ring: rgba(15, 23, 42, 0.14);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 30px -10px rgba(15, 23, 42, 0.25);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #090e18;
+  --surface: #141c2b;
+  --surface-2: #1b2436;
+  --surface-3: #232f45;
+  --border: #29354c;
+  --border-strong: #3a4a66;
+  --text: #e9eef7;
+  --text-soft: #c3cee0;
+  --muted: #8696b1;
+  --primary: #e9eef7;
+  --primary-fg: #0f172a;
+  --primary-hover: #ffffff;
+  --ring: rgba(255, 255, 255, 0.12);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
 }
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ============================================================
-   Tema oscuro — overrides centralizados (clase .dark en <html>).
-   Evita tener que poner dark: en cada componente; remapea las
-   utilidades de color que usa la app. Reglas sin @layer → ganan
-   sobre las utilidades de Tailwind.
+   Componentes reutilizables — look "SaaS" consistente.
    ============================================================ */
-.dark {
-  color-scheme: dark;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 0.65rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+  box-shadow: var(--shadow);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -6px var(--ring);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--text-soft);
+  border-color: var(--border);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.btn-danger {
+  background: transparent;
+  color: #ef4444;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8125rem;
+  border-radius: 0.55rem;
+}
+
+/* Inputs y selects con foco accesible */
+.field {
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.field::placeholder {
+  color: var(--muted);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow);
+}
+
+/* ============================================================
+   Tema oscuro — remapeo de utilidades slate que usan los
+   componentes existentes (clase .dark en <html>).
+   ============================================================ */
 .dark body {
-  background: #0b1220;
-  color: #e2e8f0;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Superficies */
 .dark .bg-white {
-  background-color: #1e293b;
+  background-color: var(--surface);
 }
 .dark .bg-slate-50,
 .dark .bg-slate-50\/60,
 .dark .bg-slate-50\/80 {
-  background-color: #172033;
+  background-color: var(--surface-2);
 }
 .dark .bg-slate-100 {
-  background-color: #334155;
+  background-color: var(--surface-3);
 }
 
 /* Acentos suaves (fondos de avisos / chips) */
@@ -63,48 +196,48 @@ body {
 
 /* Texto */
 .dark .text-slate-800 {
-  color: #f1f5f9;
+  color: var(--text);
 }
 .dark .text-slate-700 {
-  color: #e2e8f0;
+  color: var(--text-soft);
 }
 .dark .text-slate-600 {
-  color: #cbd5e1;
+  color: #c3cee0;
 }
 .dark .text-slate-500 {
-  color: #94a3b8;
+  color: var(--muted);
 }
 .dark .text-slate-400 {
-  color: #64748b;
+  color: #6b7c98;
 }
 
 /* Bordes */
 .dark .border-slate-100 {
-  border-color: #1e293b;
+  border-color: var(--border);
 }
 .dark .border-slate-200 {
-  border-color: #334155;
+  border-color: var(--border);
 }
 .dark .border-slate-300 {
-  border-color: #475569;
+  border-color: var(--border-strong);
 }
 
-/* Formularios */
+/* Formularios nativos sin clase .field */
 .dark input,
 .dark select,
 .dark textarea {
-  background-color: #1e293b;
-  color: #e2e8f0;
-  border-color: #475569;
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #64748b;
+  color: var(--muted);
 }
 
 /* Hovers de filas/botones claros */
 .dark .hover\:bg-slate-50:hover {
-  background-color: #334155;
+  background-color: var(--surface-3);
 }
 .dark .hover\:bg-sky-50:hover {
   background-color: #0c2a45;
@@ -113,7 +246,11 @@ body {
   background-color: #4c0519;
 }
 
-/* Cabeceras de tabla y divisores */
-.dark .divide-slate-100 > * + * {
-  border-color: #1e293b;
+/* Divisores de tabla — el override necesita la MISMA especificidad
+   que la utilidad que genera Tailwind v4 (`> :not([hidden]) ~ :not([hidden])`),
+   de lo contrario las líneas quedan en slate-100 (casi blancas) en oscuro.
+   Esto causaba la "barra blanca" debajo de las filas. */
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border);
 }
