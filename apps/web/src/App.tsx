@@ -154,7 +154,7 @@ export function App() {
 function Brand() {
   return (
     <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
-      <img src={logo} alt="" className="h-10 w-10 rounded-xl shadow-sm" />
+      <img src={logo} alt="" className="h-10 w-10 rounded-xl" />
       <div className="leading-tight">
         <div className="font-bold text-slate-800">Suites Manager</div>
         <div className="text-xs text-slate-400">Gestión de hoteles</div>

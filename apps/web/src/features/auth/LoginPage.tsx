@@ -42,7 +42,7 @@ export function LoginPage() {
             <img
               src={logo}
               alt="Suites Manager"
-              className="mb-4 h-20 w-20 rounded-2xl shadow-md"
+              className="mb-4 h-48 w-48 rounded-2xl"
             />
             <h1 className="text-2xl font-bold tracking-tight text-slate-800">
               Suites Manager
