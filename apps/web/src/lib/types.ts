@@ -54,6 +54,14 @@ export interface Config {
   logoUrl: string | null;
 }
 
+export interface Usuario {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "gestor" | "cliente";
+  createdAt: string;
+}
+
 export interface TarifaRegla {
   id: number;
   nombre: string;
@@ -136,6 +144,11 @@ export interface ApiClient {
   config: {
     get: () => Promise<Config | null>;
     update: (data: import("@suites/shared").ConfigUpdate) => Promise<Config>;
+  };
+  usuarios: {
+    list: () => Promise<Usuario[]>;
+    setRole: (id: string, role: string) => Promise<Usuario>;
+    remove: (id: string) => Promise<{ ok: true }>;
   };
   tarifas: {
     list: () => Promise<TarifaRegla[]>;

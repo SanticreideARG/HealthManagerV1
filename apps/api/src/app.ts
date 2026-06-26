@@ -7,6 +7,7 @@ import { huespedesRoutes } from "./routes/huespedes.js";
 import { reportesRoutes } from "./routes/reportes.js";
 import { tarifasRoutes } from "./routes/tarifas.js";
 import { configRoutes } from "./routes/config.js";
+import { usuariosRoutes } from "./routes/usuarios.js";
 import { auth } from "./auth.js";
 
 /** App Hono sin servidor: la consume server.ts (local) y api/index.ts (Vercel). */
@@ -35,5 +36,6 @@ app.route("/huespedes", huespedesRoutes);
 app.route("/reportes", reportesRoutes);
 app.route("/tarifas", tarifasRoutes);
 app.route("/config", configRoutes);
+app.route("/usuarios", usuariosRoutes);
 
 export default app;

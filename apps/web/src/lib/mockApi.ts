@@ -6,6 +6,7 @@ import type {
   ReporteResumen,
   TarifaRegla,
   Config,
+  Usuario,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -100,6 +101,13 @@ let configMock: Config = {
   email: "reservas@mialojamiento.com",
   logoUrl: null,
 };
+
+// ---- Usuarios (mock) ----
+const usuariosMock: Usuario[] = [
+  { id: "u1", name: "Admin Demo", email: "admin@demo.test", role: "admin", createdAt: "2026-06-01T00:00:00Z" },
+  { id: "u2", name: "Recepción", email: "gestor@demo.test", role: "gestor", createdAt: "2026-06-05T00:00:00Z" },
+  { id: "u3", name: "Cliente Demo", email: "cliente@demo.test", role: "cliente", createdAt: "2026-06-10T00:00:00Z" },
+];
 
 // ---- Tarifas dinámicas (mock) ----
 let seqRegla = 0;
@@ -282,6 +290,20 @@ export const mockApi: ApiClient = {
     update: (data) => {
       configMock = { ...configMock, ...data };
       return delay(configMock);
+    },
+  },
+  usuarios: {
+    list: () => delay([...usuariosMock]),
+    setRole: (id, role) => {
+      const u = usuariosMock.find((x) => x.id === id);
+      if (!u) return Promise.reject(new ApiError(404, "No encontrado"));
+      u.role = role as Usuario["role"];
+      return delay(u);
+    },
+    remove: (id) => {
+      const i = usuariosMock.findIndex((x) => x.id === id);
+      if (i >= 0) usuariosMock.splice(i, 1);
+      return delay({ ok: true } as const);
     },
   },
   reportes: {

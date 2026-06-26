@@ -20,6 +20,7 @@ import type {
   TarifaRegla,
   Cotizacion,
   Config,
+  Usuario,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -35,6 +36,7 @@ export type {
   Cotizacion,
   ReporteResumen,
   Config,
+  Usuario,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -99,6 +101,16 @@ const realApi: ApiClient = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+  },
+  usuarios: {
+    list: () => request<Usuario[]>("/usuarios"),
+    setRole: (id: string, role: string) =>
+      request<Usuario>(`/usuarios/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      }),
+    remove: (id: string) =>
+      request<{ ok: true }>(`/usuarios/${id}`, { method: "DELETE" }),
   },
   tarifas: {
     list: () => request<TarifaRegla[]>("/tarifas"),

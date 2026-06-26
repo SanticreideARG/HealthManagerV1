@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api.js";
 import { HabitacionesAdmin } from "./HabitacionesAdmin.js";
+import { UsuariosAdmin } from "./UsuariosAdmin.js";
 
 const campos = [
   ["nombre", "Nombre"],
@@ -91,6 +92,8 @@ export function ConfiguracionPage() {
       </section>
 
       <HabitacionesAdmin />
+
+      <UsuariosAdmin />
     </div>
   );
 }

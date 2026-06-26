@@ -176,6 +176,9 @@ Ampliación (🔜/⏳):
     muestra "sin acceso" a clientes. `credentials: include` en el cliente API (envía la
     cookie). Promover roles: `pnpm db:promote <email> <admin|gestor|cliente>`.
     Verificado los 3 roles (tabs + 403/200).
+  - ✅ **Gestión de usuarios** (admin, en Configuración): listar, cambiar rol y eliminar
+    usuarios (API `/usuarios` adminOnly; no podés cambiar/eliminar tu propia cuenta).
+    Componente `UsuariosAdmin`. Verificado en mock.
   - 🔜 (5) Google OAuth (clientes del portal).
 - ⭐ **Tests automatizados**:
   - ✅ **Vitest** (unit): lógica de tarifas dinámicas (finde/rango/prioridad/totales),
