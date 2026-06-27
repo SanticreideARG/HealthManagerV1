@@ -99,6 +99,14 @@ export interface ReporteResumen {
   frecuentes: { huesped: string; estadias: number; total: number }[];
 }
 
+export interface PublicHabitacion {
+  id: number;
+  nombre: string;
+  tipo: string;
+  capacidad: number;
+  tarifaBase: string;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -117,6 +125,9 @@ export class ApiError extends Error {
 
 /** Forma común que cumplen tanto la API real como el mock. */
 export interface ApiClient {
+  landing: {
+    habitaciones: () => Promise<PublicHabitacion[]>;
+  };
   habitaciones: {
     list: () => Promise<Habitacion[]>;
     create: (data: import("@suites/shared").HabitacionCreate) => Promise<Habitacion>;

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Suites Manager | Gestión Hotelera de Lujo</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#cbdbf5",
+                    "inverse-primary": "#bec6e0",
+                    "primary-fixed": "#dae2fd",
+                    "on-secondary-fixed": "#001a42",
+                    "on-secondary-container": "#fefcff",
+                    "on-secondary-fixed-variant": "#004395",
+                    "primary": "#000000",
+                    "surface-variant": "#d3e4fe",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-container": "#98805d",
+                    "on-secondary": "#ffffff",
+                    "surface-container-high": "#dce9ff",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "primary-fixed-dim": "#bec6e0",
+                    "tertiary-fixed": "#fcdeb5",
+                    "on-tertiary-fixed-variant": "#574425",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-bright": "#f8f9ff",
+                    "surface-container": "#e5eeff",
+                    "on-primary-fixed": "#131b2e",
+                    "tertiary-fixed-dim": "#dec29a",
+                    "on-background": "#0b1c30",
+                    "error-container": "#ffdad6",
+                    "secondary": "#0058be",
+                    "surface": "#f8f9ff",
+                    "background": "#f8f9ff",
+                    "tertiary-container": "#271901",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#271901",
+                    "inverse-surface": "#213145",
+                    "secondary-fixed": "#d8e2ff",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#2170e4",
+                    "on-surface": "#0b1c30",
+                    "surface-tint": "#565e74",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#000000",
+                    "outline": "#76777d",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#7c839b",
+                    "outline-variant": "#c6c6cd",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "primary-container": "#131b2e",
+                    "on-surface-variant": "#45464d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-max": "1440px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "40px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0b1c30; /* Dark background as per brand guide on-background */
+            color: #f8f9ff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .glass-effect {
+            background: rgba(11, 28, 48, 0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-dark {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-dark:hover {
+            border-color: #0058be;
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .carousel-container {
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .carousel-container::-webkit-scrollbar {
+            display: none;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="selection:bg-secondary selection:text-white">
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 w-full z-50 glass-effect">
+<div class="max-w-container-max mx-auto px-gutter py-4 flex justify-between items-center">
+<div class="text-headline-md font-headline-md font-bold text-white tracking-tight">
+                Suites Manager
+            </div>
+<div class="flex items-center gap-8">
+<div class="hidden md:flex gap-6">
+<a class="text-label-md font-label-md text-white border-b-2 border-secondary py-1 transition-colors" href="#">Inicio</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-white py-1 transition-colors" href="#">Propiedades</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-white py-1 transition-colors" href="#">Servicios</a>
+</div>
+<button class="bg-secondary hover:bg-secondary-container text-white px-6 py-2 rounded-lg font-label-md transition-all active:scale-95">
+                    Login
+                </button>
+</div>
+</div>
+</nav>
+<main class="pt-20">
+<!-- Hero Section: Carousel -->
+<section class="relative w-full h-[70vh] overflow-hidden group">
+<div class="flex carousel-container h-full overflow-x-auto snap-x snap-mandatory" id="hero-carousel">
+<div class="min-w-full h-full snap-center relative">
+<img class="w-full h-full object-cover brightness-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtF92OgHPDYk76gqmQzWs9V82H5AOL3bcVNWZ2GYyj6C6K7u7w1D80xwAh6YRi2vjye2FVCvVOnLgcZ1y0rGUD_YgzuzsH3n6biw_fiRTbc46-9O2ewv1xaW3gnwJhA31FhLcn3i8kiCDT__FEJxQhZDkdZL5e7Ykw6o7O9CQrEKZpm11wYyrf1Twd0lHAwudQHbCrP4JS34Y0AlKkBGVCqHSDJlLytVd1D5m-MSG4kb8frLJs4nLbPFhFiQkTGzwSD6r3P8_5-Cd4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0b1c30] via-transparent to-transparent"></div>
+<div class="absolute bottom-24 left-margin-desktop max-w-2xl">
+<h1 class="text-headline-lg font-headline-lg text-white mb-4">Experiencia de Lujo Definida</h1>
+<p class="text-body-lg font-body-lg text-surface-dim">Gestión inteligente para las propiedades más exclusivas del mundo.</p>
+</div>
+</div>
+<div class="min-w-full h-full snap-center relative">
+<img class="w-full h-full object-cover brightness-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLl3jsZZpDiQeoE0AXGNadYlyOAUOxSIX3bLKx5Wk-djMy-a6Z2L_Kv-7p_r7V6ZoAemex5ZjeGUOkvQKAFK8KeiRaL2cVw86Zixjs6qY4qVQIQ93VooBj568UrBTvA2GcfB30LhdM4-iP6wktzyi8bG3p0nuxfllZuZpUhFZY38ET3yoI5QPDom4qLSdaavCfolE2YoaxtQ_AdHqwv_neTB9wnnZsrqNB-ACXLuMfBm5ztm2BKUdL8wuOxo1yQcfofefCuuRsmP4u"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0b1c30] via-transparent to-transparent"></div>
+<div class="absolute bottom-24 left-margin-desktop max-w-2xl">
+<h1 class="text-headline-lg font-headline-lg text-white mb-4">Confort en la Gran Ciudad</h1>
+<p class="text-body-lg font-body-lg text-surface-dim">Suites ejecutivas con vistas panorámicas y servicios de primera clase.</p>
+</div>
+</div>
+<div class="min-w-full h-full snap-center relative">
+<img class="w-full h-full object-cover brightness-75" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBb9JPIkeSV4uqiFgdzIAGaL8ddsA1z7zMTtUAsdzNTvZFEEsLfxSJjxMtxeOMsLS26ny6CommU4V32MydZEVPAlSyv4Kb7rvYS4xSFLUKMkIoYR78_uWbb_UhSUhvYP7FZZ0IayUUdIxfBitaBv8NESPAb7_zEl3OAZfMIjwfT6earlH3PqSTushmlCKUmUkUtii_ZnBe7KOlLVJWptwzx03st_P-ikDvzDDU-GNqy4h1raPqm1pvv2FM9H4I8kS2L8_1LYZU4daDD"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0b1c30] via-transparent to-transparent"></div>
+<div class="absolute bottom-24 left-margin-desktop max-w-2xl">
+<h1 class="text-headline-lg font-headline-lg text-white mb-4">Refugios Exclusivos</h1>
+<p class="text-body-lg font-body-lg text-surface-dim">Privacidad absoluta y diseño de vanguardia en cada detalle.</p>
+</div>
+</div>
+</div>
+<!-- Carousel Controls -->
+<button class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100" onclick="scrollCarousel(-1)">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100" onclick="scrollCarousel(1)">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</section>
+<!-- Main Content Grid -->
+<section class="max-w-container-max mx-auto px-gutter py-20">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+<!-- Left: Calendar Search -->
+<aside class="lg:col-span-4">
+<div class="sticky top-28 space-y-8">
+<div class="p-8 card-dark rounded-xl">
+<h2 class="text-headline-md font-headline-md text-white mb-6">Reserva tu Suite</h2>
+<div class="space-y-4">
+<div class="bg-[#1a2b42] p-4 rounded-lg border border-white/10">
+<p class="text-label-sm font-label-sm text-secondary uppercase mb-2">Fechas de Estancia</p>
+<div class="flex items-center justify-between text-white font-body-md">
+<div class="flex flex-col">
+<span class="text-label-sm opacity-60">Entrada</span>
+<span class="font-bold">12 Oct 2024</span>
+</div>
+<span class="material-symbols-outlined text-secondary">calendar_month</span>
+<div class="flex flex-col text-right">
+<span class="text-label-sm opacity-60">Salida</span>
+<span class="font-bold">15 Oct 2024</span>
+</div>
+</div>
+</div>
+<!-- Minimal Calendar Simulation -->
+<div class="mt-6">
+<div class="grid grid-cols-7 gap-1 text-center text-label-sm font-label-sm text-surface-dim mb-4">
+<span>LU</span><span>MA</span><span>MI</span><span>JU</span><span>VI</span><span>SA</span><span>DO</span>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center text-body-md">
+<span class="p-2 opacity-20">28</span><span class="p-2 opacity-20">29</span><span class="p-2 opacity-20">30</span><span class="p-2">1</span><span class="p-2">2</span><span class="p-2">3</span><span class="p-2">4</span>
+<span class="p-2">5</span><span class="p-2">6</span><span class="p-2">7</span><span class="p-2">8</span></div></div></div></div></div></aside></div></section></main></body></html>

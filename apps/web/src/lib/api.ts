@@ -21,6 +21,7 @@ import type {
   Cotizacion,
   Config,
   Usuario,
+  PublicHabitacion,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -37,6 +38,7 @@ export type {
   ReporteResumen,
   Config,
   Usuario,
+  PublicHabitacion,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -56,6 +58,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const realApi: ApiClient = {
+  landing: {
+    habitaciones: () => request<PublicHabitacion[]>("/public/habitaciones"),
+  },
   habitaciones: {
     list: () => request<Habitacion[]>("/habitaciones"),
     create: (data: HabitacionCreate) =>

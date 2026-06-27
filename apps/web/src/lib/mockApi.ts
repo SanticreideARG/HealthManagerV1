@@ -7,6 +7,7 @@ import type {
   TarifaRegla,
   Config,
   Usuario,
+  PublicHabitacion,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -161,6 +162,18 @@ function seSolapan(
 }
 
 export const mockApi: ApiClient = {
+  landing: {
+    habitaciones: () =>
+      delay(
+        habitaciones.map((h): PublicHabitacion => ({
+          id: h.id,
+          nombre: h.nombre,
+          tipo: h.tipo,
+          capacidad: h.capacidad,
+          tarifaBase: h.tarifaBase,
+        })),
+      ),
+  },
   habitaciones: {
     list: () => delay([...habitaciones]),
     create: (data) => {
