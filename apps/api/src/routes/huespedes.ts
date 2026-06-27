@@ -12,6 +12,27 @@ huespedesRoutes.get("/", async (c) => {
   return c.json(rows);
 });
 
+// Huéspedes actualmente alojados (reserva en estado 'ocupada')
+huespedesRoutes.get("/alojados", async (c) => {
+  const rows = await db
+    .select({
+      id: huespedes.id,
+      nombre: huespedes.nombre,
+      documento: huespedes.documento,
+      email: huespedes.email,
+      telefono: huespedes.telefono,
+      reservaId: reservas.id,
+      habitacion: habitaciones.nombre,
+      checkin: reservas.checkin,
+    })
+    .from(reservas)
+    .innerJoin(huespedes, eq(reservas.huespedId, huespedes.id))
+    .innerJoin(habitaciones, eq(reservas.habitacionId, habitaciones.id))
+    .where(eq(reservas.estado, "ocupada"))
+    .orderBy(huespedes.nombre);
+  return c.json(rows);
+});
+
 huespedesRoutes.post("/", zValidator("json", huespedCreate), async (c) => {
   const data = c.req.valid("json");
   const [row] = await db.insert(huespedes).values(data).returning();

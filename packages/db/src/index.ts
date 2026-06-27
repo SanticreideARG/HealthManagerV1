@@ -30,6 +30,8 @@ export {
   pagos,
   tarifaReglas,
   config,
+  amenidades,
+  habitacionAmenidades,
   authUser,
   authSession,
   authAccount,
@@ -41,6 +43,8 @@ export type {
   Reserva,
   Pago,
   TarifaRegla,
+  Amenidad,
+  HabitacionAmenidad,
 } from "./schema.js";
 
 // Operadores de Drizzle (una sola instancia; ver nota en package del repo).

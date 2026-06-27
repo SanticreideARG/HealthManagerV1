@@ -16,7 +16,7 @@ export function HabitacionesAdmin() {
     <div>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Habitaciones</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Alojamientos</h2>
           <p className="text-sm text-slate-400">
             Alta, edición y baja. El calendario es solo lectura.
           </p>
@@ -38,7 +38,7 @@ export function HabitacionesAdmin() {
                 <th className="px-4 py-2 text-center font-semibold">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {q.data.map((h) => (
                 <tr
                   key={h.id}
@@ -71,7 +71,7 @@ export function HabitacionesAdmin() {
               {q.data.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                    Sin habitaciones. Creá la primera.
+                    Sin alojamientos. Creá el primero.
                   </td>
                 </tr>
               )}

@@ -1,6 +1,7 @@
 import {
   pgEnum,
   pgTable,
+  primaryKey,
   serial,
   varchar,
   integer,
@@ -58,6 +59,9 @@ export const huespedes = pgTable("huespedes", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre", { length: 120 }).notNull(),
   documento: varchar("documento", { length: 40 }),
+  tipoDocumento: varchar("tipo_documento", { length: 30 }), // DNI | Pasaporte | CE | Otro
+  nacionalidad: varchar("nacionalidad", { length: 80 }),
+  fechaNacimiento: date("fecha_nacimiento"),
   email: varchar("email", { length: 160 }),
   telefono: varchar("telefono", { length: 40 }),
   notas: text("notas"),
@@ -128,6 +132,34 @@ export const config = pgTable("config", {
   logoUrl: text("logo_url"),
 });
 
+// ---------- Amenidades (catálogo de características de alojamientos) ----------
+export const tipoAmenidadEnum = pgEnum("tipo_amenidad", [
+  "bool",
+  "texto",
+  "numero",
+]);
+
+export const amenidades = pgTable("amenidades", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 120 }).notNull(),
+  tipo: tipoAmenidadEnum("tipo").notNull().default("bool"),
+  icono: varchar("icono", { length: 10 }),
+});
+
+export const habitacionAmenidades = pgTable(
+  "habitacion_amenidades",
+  {
+    habitacionId: integer("habitacion_id")
+      .notNull()
+      .references(() => habitaciones.id, { onDelete: "cascade" }),
+    amenidadId: integer("amenidad_id")
+      .notNull()
+      .references(() => amenidades.id, { onDelete: "cascade" }),
+    valor: text("valor"), // null = true para bool; string para texto/numero
+  },
+  (t) => [primaryKey({ columns: [t.habitacionId, t.amenidadId] })],
+);
+
 // ---------- Better Auth (tablas auth_*; nombres de propiedad = campos de Better Auth) ----------
 export const authUser = pgTable("auth_user", {
   id: text("id").primaryKey(),
@@ -185,3 +217,5 @@ export type Huesped = typeof huespedes.$inferSelect;
 export type Reserva = typeof reservas.$inferSelect;
 export type Pago = typeof pagos.$inferSelect;
 export type TarifaRegla = typeof tarifaReglas.$inferSelect;
+export type Amenidad = typeof amenidades.$inferSelect;
+export type HabitacionAmenidad = typeof habitacionAmenidades.$inferSelect;

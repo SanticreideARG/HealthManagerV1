@@ -2,12 +2,15 @@ import type {
   ApiClient,
   Habitacion,
   Huesped,
+  HuespedAlojado,
   ReservaListItem,
   ReporteResumen,
   TarifaRegla,
   Config,
   Usuario,
   PublicHabitacion,
+  Amenidad,
+  HabitacionAmenidad,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -23,6 +26,7 @@ const hoy = new Date().toISOString().slice(0, 10);
 let seqHab = 0;
 let seqRes = 0;
 let seqHuesped = 0;
+let seqAmen = 0;
 
 interface ReservaInterna extends ReservaListItem {}
 
@@ -35,12 +39,41 @@ const habitaciones: Habitacion[] = [
 ];
 
 const huespedes: Huesped[] = [
-  { id: ++seqHuesped, nombre: "Familia Gómez", documento: "30111222", email: "gomez@mail.com", telefono: "+54 11 5555-1111", notas: "Vienen con mascota." },
-  { id: ++seqHuesped, nombre: "Lucía Fernández", documento: "28999111", email: "lucia@mail.com", telefono: null, notas: null },
-  { id: ++seqHuesped, nombre: "Martín Pérez", documento: null, email: null, telefono: "+54 9 11 4444-2222", notas: "Pidió cuna." },
-  { id: ++seqHuesped, nombre: "Carlos Ruiz", documento: null, email: "carlos@mail.com", telefono: null, notas: null },
-  { id: ++seqHuesped, nombre: "Ana Torres", documento: "33222111", email: null, telefono: null, notas: "Cliente frecuente." },
+  { id: ++seqHuesped, nombre: "Familia Gómez", documento: "30111222", tipoDocumento: "DNI", nacionalidad: "Argentina", fechaNacimiento: null, email: "gomez@mail.com", telefono: "+54 11 5555-1111", notas: "Vienen con mascota." },
+  { id: ++seqHuesped, nombre: "Lucía Fernández", documento: "28999111", tipoDocumento: "DNI", nacionalidad: "Argentina", fechaNacimiento: "1990-03-15", email: "lucia@mail.com", telefono: null, notas: null },
+  { id: ++seqHuesped, nombre: "Martín Pérez", documento: null, tipoDocumento: null, nacionalidad: null, fechaNacimiento: null, email: null, telefono: "+54 9 11 4444-2222", notas: "Pidió cuna." },
+  { id: ++seqHuesped, nombre: "Carlos Ruiz", documento: null, tipoDocumento: null, nacionalidad: "Uruguay", fechaNacimiento: "1985-07-22", email: "carlos@mail.com", telefono: null, notas: null },
+  { id: ++seqHuesped, nombre: "Ana Torres", documento: "33222111", tipoDocumento: "DNI", nacionalidad: "Argentina", fechaNacimiento: null, email: null, telefono: null, notas: "Cliente frecuente." },
 ];
+
+// Catálogo de amenidades (características)
+const amenidadesMock: Amenidad[] = [
+  { id: ++seqAmen, nombre: "Aire acondicionado", tipo: "bool", icono: "❄️" },
+  { id: ++seqAmen, nombre: "Baño privado", tipo: "bool", icono: "🚿" },
+  { id: ++seqAmen, nombre: "Balcón o terraza", tipo: "bool", icono: "🌿" },
+  { id: ++seqAmen, nombre: "Calefacción", tipo: "bool", icono: "🔥" },
+  { id: ++seqAmen, nombre: "Cocina/kitchenette", tipo: "bool", icono: "🍳" },
+  { id: ++seqAmen, nombre: "Disposición de camas", tipo: "texto", icono: "🛏️" },
+  { id: ++seqAmen, nombre: "Superficie (m²)", tipo: "numero", icono: "📐" },
+  { id: ++seqAmen, nombre: "Televisor", tipo: "bool", icono: "📺" },
+  { id: ++seqAmen, nombre: "WiFi", tipo: "bool", icono: "📶" },
+];
+
+type AsignacionAmen = { amenidadId: number; valor: string | null };
+const habitacionAmenidadesMock: Record<number, AsignacionAmen[]> = {
+  1: [{ amenidadId: 2, valor: null }, { amenidadId: 4, valor: null }, { amenidadId: 7, valor: "45" }, { amenidadId: 8, valor: null }, { amenidadId: 9, valor: null }, { amenidadId: 6, valor: "2 matrimoniales" }],
+  2: [{ amenidadId: 2, valor: null }, { amenidadId: 4, valor: null }, { amenidadId: 7, valor: "45" }, { amenidadId: 8, valor: null }, { amenidadId: 9, valor: null }],
+  3: [{ amenidadId: 1, valor: null }, { amenidadId: 2, valor: null }, { amenidadId: 3, valor: null }, { amenidadId: 7, valor: "30" }, { amenidadId: 8, valor: null }, { amenidadId: 9, valor: null }],
+  4: [{ amenidadId: 2, valor: null }, { amenidadId: 7, valor: "20" }, { amenidadId: 9, valor: null }],
+  5: [{ amenidadId: 2, valor: null }, { amenidadId: 9, valor: null }],
+};
+
+function resolveAmenidades(habitacionId: number): HabitacionAmenidad[] {
+  return (habitacionAmenidadesMock[habitacionId] ?? []).map((a) => {
+    const cat = amenidadesMock.find((x) => x.id === a.amenidadId)!;
+    return { amenidadId: a.amenidadId, nombre: cat.nombre, tipo: cat.tipo, icono: cat.icono, valor: a.valor };
+  });
+}
 
 function nuevaReserva(
   habitacionId: number,
@@ -211,14 +244,35 @@ export const mockApi: ApiClient = {
   },
   huespedes: {
     list: () =>
+      delay([...huespedes].sort((a, b) => a.nombre.localeCompare(b.nombre))),
+    alojados: () =>
       delay(
-        [...huespedes].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+        reservas
+          .filter((r) => r.estado === "ocupada" && r.huespedId != null)
+          .map((r) => {
+            const h = huespedes.find((x) => x.id === r.huespedId)!;
+            const hab = habitaciones.find((x) => x.id === r.habitacionId)!;
+            return {
+              id: h.id,
+              nombre: h.nombre,
+              documento: h.documento,
+              email: h.email,
+              telefono: h.telefono,
+              reservaId: r.id,
+              habitacion: hab.nombre,
+              checkin: r.checkin,
+            } satisfies HuespedAlojado;
+          })
+          .sort((a, b) => a.nombre.localeCompare(b.nombre)),
       ),
     create: (data) => {
       const h: Huesped = {
         id: ++seqHuesped,
         nombre: data.nombre,
         documento: data.documento ?? null,
+        tipoDocumento: data.tipoDocumento ?? null,
+        nacionalidad: data.nacionalidad ?? null,
+        fechaNacimiento: data.fechaNacimiento ?? null,
         email: data.email ?? null,
         telefono: data.telefono ?? null,
         notas: data.notas ?? null,
@@ -231,6 +285,9 @@ export const mockApi: ApiClient = {
       if (!h) return Promise.reject(new ApiError(404, "No encontrado"));
       if (data.nombre !== undefined) h.nombre = data.nombre;
       if (data.documento !== undefined) h.documento = data.documento ?? null;
+      if (data.tipoDocumento !== undefined) h.tipoDocumento = data.tipoDocumento ?? null;
+      if (data.nacionalidad !== undefined) h.nacionalidad = data.nacionalidad ?? null;
+      if (data.fechaNacimiento !== undefined) h.fechaNacimiento = data.fechaNacimiento ?? null;
       if (data.email !== undefined) h.email = data.email ?? null;
       if (data.telefono !== undefined) h.telefono = data.telefono ?? null;
       if (data.notas !== undefined) h.notas = data.notas ?? null;
@@ -262,6 +319,49 @@ export const mockApi: ApiClient = {
             total: r.total,
           })),
       ),
+  },
+  amenidades: {
+    list: () =>
+      delay([...amenidadesMock].sort((a, b) => a.nombre.localeCompare(b.nombre))),
+    create: (data) => {
+      const a: Amenidad = {
+        id: ++seqAmen,
+        nombre: data.nombre,
+        tipo: data.tipo ?? "bool",
+        icono: data.icono ?? null,
+      };
+      amenidadesMock.push(a);
+      return delay(a);
+    },
+    update: (id, data) => {
+      const a = amenidadesMock.find((x) => x.id === id);
+      if (!a) return Promise.reject(new ApiError(404, "No encontrada"));
+      if (data.nombre !== undefined) a.nombre = data.nombre;
+      if (data.tipo !== undefined) a.tipo = data.tipo;
+      if (data.icono !== undefined) a.icono = data.icono ?? null;
+      return delay(a);
+    },
+    remove: (id) => {
+      const i = amenidadesMock.findIndex((x) => x.id === id);
+      if (i >= 0) amenidadesMock.splice(i, 1);
+      for (const key of Object.keys(habitacionAmenidadesMock)) {
+        const arr = habitacionAmenidadesMock[Number(key)];
+        if (!arr) continue;
+        const j = arr.findIndex((a) => a.amenidadId === id);
+        if (j >= 0) arr.splice(j, 1);
+      }
+      return delay({ ok: true } as const);
+    },
+  },
+  habitacionAmenidades: {
+    get: (habitacionId) => delay(resolveAmenidades(habitacionId)),
+    set: (habitacionId, data) => {
+      habitacionAmenidadesMock[habitacionId] = data.map((a) => ({
+        amenidadId: a.amenidadId,
+        valor: a.valor ?? null,
+      }));
+      return delay(resolveAmenidades(habitacionId));
+    },
   },
   tarifas: {
     list: () =>
@@ -426,6 +526,9 @@ export const mockApi: ApiClient = {
           id: ++seqHuesped,
           nombre: data.huesped!.nombre,
           documento: data.huesped!.documento ?? null,
+          tipoDocumento: data.huesped!.tipoDocumento ?? null,
+          nacionalidad: data.huesped!.nacionalidad ?? null,
+          fechaNacimiento: data.huesped!.fechaNacimiento ?? null,
           email: data.huesped!.email ?? null,
           telefono: data.huesped!.telefono ?? null,
           notas: data.huesped!.notas ?? null,

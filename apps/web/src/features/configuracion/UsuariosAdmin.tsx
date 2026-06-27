@@ -44,7 +44,7 @@ export function UsuariosAdmin() {
                 <th className="px-4 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {q.data.map((u) => (
                 <tr key={u.id}>
                   <td className="px-4 py-2 font-medium text-slate-800">

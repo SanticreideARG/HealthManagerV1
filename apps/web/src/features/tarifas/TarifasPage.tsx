@@ -58,7 +58,7 @@ export function TarifasPage() {
                 <th className="px-4 py-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {q.data.map((r) => (
                 <tr key={r.id}>
                   <td

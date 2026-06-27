@@ -4,6 +4,8 @@ import { api } from "../../lib/api.js";
 import type { Huesped } from "../../lib/api.js";
 import { Modal } from "../habitaciones/NuevaHabitacion.js";
 
+const TIPOS_DOC = ["DNI", "Pasaporte", "CE", "Otro"] as const;
+
 /** Alta o edición de un huésped. Si recibe `huesped`, edita; si no, crea. */
 export function HuespedForm({
   huesped,
@@ -15,6 +17,9 @@ export function HuespedForm({
   const qc = useQueryClient();
   const [nombre, setNombre] = useState(huesped?.nombre ?? "");
   const [documento, setDocumento] = useState(huesped?.documento ?? "");
+  const [tipoDocumento, setTipoDocumento] = useState(huesped?.tipoDocumento ?? "");
+  const [nacionalidad, setNacionalidad] = useState(huesped?.nacionalidad ?? "");
+  const [fechaNacimiento, setFechaNacimiento] = useState(huesped?.fechaNacimiento ?? "");
   const [email, setEmail] = useState(huesped?.email ?? "");
   const [telefono, setTelefono] = useState(huesped?.telefono ?? "");
   const [notas, setNotas] = useState(huesped?.notas ?? "");
@@ -23,6 +28,9 @@ export function HuespedForm({
   const payload = () => ({
     nombre,
     documento: documento || undefined,
+    tipoDocumento: tipoDocumento || undefined,
+    nacionalidad: nacionalidad || undefined,
+    fechaNacimiento: fechaNacimiento || undefined,
     email: email || undefined,
     telefono: telefono || undefined,
     notas: notas || undefined,
@@ -35,6 +43,7 @@ export function HuespedForm({
         : api.huespedes.create(payload()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["huespedes"] });
+      qc.invalidateQueries({ queryKey: ["huespedes.alojados"] });
       onClose();
     },
     onError: () => setError("No se pudo guardar. Revisá el email."),
@@ -52,15 +61,53 @@ export function HuespedForm({
           placeholder="Nombre y apellido"
         />
       </label>
+
       <div className="flex gap-3">
+        <label className="block w-32 shrink-0 text-sm">
+          Tipo doc.
+          <select
+            value={tipoDocumento}
+            onChange={(e) => setTipoDocumento(e.target.value)}
+            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
+          >
+            <option value="">—</option>
+            {TIPOS_DOC.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </label>
         <label className="block flex-1 text-sm">
-          Documento
+          Nº de documento
           <input
             value={documento}
             onChange={(e) => setDocumento(e.target.value)}
             className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
           />
         </label>
+      </div>
+
+      <div className="flex gap-3">
+        <label className="block flex-1 text-sm">
+          Nacionalidad
+          <input
+            value={nacionalidad}
+            onChange={(e) => setNacionalidad(e.target.value)}
+            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
+            placeholder="Argentina"
+          />
+        </label>
+        <label className="block flex-1 text-sm">
+          Fecha de nacimiento
+          <input
+            type="date"
+            value={fechaNacimiento}
+            onChange={(e) => setFechaNacimiento(e.target.value)}
+            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
+          />
+        </label>
+      </div>
+
+      <div className="flex gap-3">
         <label className="block flex-1 text-sm">
           Teléfono
           <input
@@ -69,16 +116,17 @@ export function HuespedForm({
             className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
           />
         </label>
+        <label className="block flex-1 text-sm">
+          Email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
+          />
+        </label>
       </div>
-      <label className="block text-sm">
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
-        />
-      </label>
+
       <label className="block text-sm">
         Preferencias / notas
         <textarea

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db, eq, habitaciones } from "@suites/db";
+import { db, eq, habitaciones, habitacionAmenidades } from "@suites/db";
 import { habitacionCreate, habitacionUpdate } from "@suites/shared";
 import { staff, adminOnly } from "../middleware/auth.js";
+import { getHabitacionAmenidades, habitacionAmenidadesSet } from "./amenidades.js";
 
 export const habitacionesRoutes = new Hono();
 habitacionesRoutes.use("*", staff); // ver: admin + gestor; ABM: solo admin
@@ -44,6 +45,36 @@ habitacionesRoutes.patch(
       .returning();
     if (!row) return c.json({ error: "No encontrada" }, 404);
     return c.json(row);
+  },
+);
+
+// Amenidades de una habitación concreta
+habitacionesRoutes.get("/:id/amenidades", async (c) => {
+  const id = Number(c.req.param("id"));
+  return c.json(await getHabitacionAmenidades(id));
+});
+
+habitacionesRoutes.put(
+  "/:id/amenidades",
+  adminOnly,
+  zValidator("json", habitacionAmenidadesSet),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const data = c.req.valid("json");
+    await db
+      .delete(habitacionAmenidades)
+      .where(eq(habitacionAmenidades.habitacionId, id));
+    if (data.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await db.insert(habitacionAmenidades).values(
+        data.map((a) => ({
+          habitacionId: id,
+          amenidadId: a.amenidadId,
+          valor: a.valor ?? null,
+        })) as any,
+      );
+    }
+    return c.json(await getHabitacionAmenidades(id));
   },
 );
 

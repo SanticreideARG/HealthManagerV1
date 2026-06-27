@@ -54,7 +54,20 @@ export function HuespedDetalle({
   return (
     <Modal titulo={huesped.nombre} onClose={onClose}>
       <dl className="space-y-1 text-sm text-slate-600">
-        <Fila label="Documento" valor={huesped.documento} />
+        <Fila
+          label="Documento"
+          valor={
+            huesped.tipoDocumento && huesped.documento
+              ? `${huesped.tipoDocumento} ${huesped.documento}`
+              : (huesped.documento ?? null)
+          }
+        />
+        {huesped.nacionalidad && (
+          <Fila label="Nacionalidad" valor={huesped.nacionalidad} />
+        )}
+        {huesped.fechaNacimiento && (
+          <Fila label="Fecha de nacimiento" valor={huesped.fechaNacimiento} />
+        )}
 
         <div className="flex justify-between">
           <dt className="text-slate-400">Email</dt>
@@ -129,7 +142,7 @@ export function HuespedDetalle({
         {historialQ.data && historialQ.data.length === 0 && (
           <p className="text-sm text-slate-400">Sin estadías registradas.</p>
         )}
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-700">
           {historialQ.data?.map((h) => (
             <li key={h.id} className="flex justify-between py-1.5 text-sm">
               <span>

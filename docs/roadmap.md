@@ -158,29 +158,18 @@ Ampliación (🔜/⏳):
   - Bonificaciones se expresan en **monto fijo $** (precio unitario × cantidad),
     no en porcentaje.
 
-### Huéspedes — separar "alojados" de "histórico" (⏳)
-- ⏳ **Completar la ficha** con los datos aún ⏳ del roadmap (ver "Huéspedes (ficha)"
-  arriba: datos personales, documentación/procedencia, info de pago, adicional).
-- ⏳ **Cargos extra sobre el huésped**: aplicar recargos (servicios/consumos del
-  catálogo de Tarifas) **solo a clientes activos** = los que hicieron **check-in**.
-- ⏳ **Reestructura de la pestaña Huéspedes** en dos cuadros:
-  1. **Huéspedes** (arriba, nuevo): solo los **alojados actualmente** (con check-in
-     hecho, sin check-out). Permite **modificar datos** y **cargar recargos**
-     (servicios/consumos).
-  2. **Histórico de Clientes** (abajo, el listado actual renombrado): todos los
-     huéspedes, **ordenado por último check-in realizado** (desc).
-
-  **Decisiones (2026-06-26):**
-  - "Alojado actualmente" = huésped con una reserva en estado **`ocupada`** (check-in
-    hecho, sin check-out).
-  - Los recargos se acumulan **sobre la reserva activa** (cada estadía tiene sus
-    consumos) y salen en el comprobante de check-out.
-  - Los recargos se **congelan al hacer check-out** (no se editan después, para no
-    alterar comprobantes emitidos).
-  - **Ficha por fases** (recomendación aceptada): **Fase A** primero — tipo y número
-    de documento, nacionalidad, fecha de nacimiento (alto valor operativo / legal).
-    **Fase B** después — resto de campos ⏳ (dirección, estado civil, motivo de viaje,
-    info de pago, vehículo, preferencias, acompañantes, foto/scan del documento).
+### Huéspedes — separar "alojados" de "histórico" (✅ Fase A / ⏳ resto)
+- ✅ **Reestructura de la pestaña Huéspedes**: dos secciones:
+  1. **"Alojados ahora"** (arriba): cards de huéspedes con reserva en estado `ocupada`.
+     Click → abre la ficha del huésped.
+  2. **"Historial de Clientes"** (abajo): listado completo con búsqueda.
+  - Endpoint nuevo: `GET /huespedes/alojados`. Migration: `0007_huespedes_fase_a.sql`.
+- ✅ **Ficha Fase A** — nuevos campos en `HuespedForm` y `HuespedDetalle`:
+  tipo de documento (DNI/Pasaporte/CE/Otro), número de documento, nacionalidad,
+  fecha de nacimiento. Verificado en mock.
+- ⏳ **Cargos extra sobre el huésped** (depende de catálogo de cargos en Tarifas).
+- ⏳ **Ficha Fase B**: dirección, estado civil, motivo de viaje, info de pago,
+  vehículo, preferencias, acompañantes, foto/scan del documento.
 
 ### Calendario — datos del cliente (⏳)
 - ⏳ **Botón adicional "Ver cliente"** en las acciones de una reserva (junto a
@@ -190,16 +179,14 @@ Ampliación (🔜/⏳):
   **Decisión (2026-06-26):** se muestra en un **panel/sección dentro del mismo modal**
   de la reserva (sin navegar fuera; mantiene el contexto).
 
-### Configuración › Habitaciones — características de la unidad (⏳)
-- ⏳ **"Características" de las unidades**: poder enumerar detalles por habitación
-  (baño privado, TV, aire acondicionado, m², etc.). Coincide con la nota de diseño de
-  "amenities" ya registrada (tabla `habitacion_amenities` o columna `JSONB amenities`).
-
-  **Decisiones (2026-06-26):**
-  - **Catálogo configurable reutilizable** (se define una vez y se asigna por unidad),
-    no texto libre. Sirve también para la futura landing/portal.
-  - **Mixto**: cada característica define su tipo — **booleana** (TV: sí/no) o
-    **con valor** (m²: número, disposición de camas: texto).
+### Configuración › Habitaciones — características de la unidad (✅)
+- ✅ **"Características" de las unidades**: catálogo configurable reutilizable en
+  Configuración + asignación por unidad en el modal de edición de alojamiento.
+  - Tablas: `amenidades` (catálogo) + `habitacion_amenidades` (asignación × unidad).
+  - Tipos: **booleana** (checkbox), **texto** (campo libre), **número** (campo numérico).
+  - Migrations: `0006_amenidades.sql`. API: `GET/POST/PATCH/DELETE /amenidades`,
+    `GET/PUT /habitaciones/:id/amenidades`. UI: sección en Configuración + sección
+    en modal "Editar alojamiento". Verificado en mock.
 
 ---
 
@@ -208,10 +195,10 @@ Ampliación (🔜/⏳):
 > Parte de los ítems requieren análisis o cuestionario previo (indicado).
 
 ### BUG — Línea blanca en tablas (modo oscuro, persistente) 🐛
-- ⏳ **BUG 3** — El divisor `divide-slate-100` sigue mostrando una línea blanca/clara
-  entre filas en modo oscuro en ciertas tablas. Ya se intentó un override de
-  especificidad en index.css; no fue suficiente en producción. A re-diagnosticar
-  apuntando al selector exacto que genera Tailwind v4 en el bundle final.
+- ✅ **BUG 3** — `dark:divide-slate-700` agregado directamente en JSX (`<tbody>` / `<ul>`)
+  en los 6 archivos afectados: `HabitacionesAdmin`, `TarifasPage`, `UsuariosAdmin`,
+  `ReportesPage`, `HuespedesPage`, `HuespedDetalle`. Fix más robusto que el override
+  CSS (no depende del orden de capas en el bundle de producción de Tailwind v4).
 
 ### Seguridad — Cambios sensibles solicitan contraseña (⏳)
 - ⏳ **Re-autenticación antes de cambios sensibles**: operaciones como cambiar email,
@@ -219,22 +206,25 @@ Ampliación (🔜/⏳):
   actual antes de ejecutarse (flujo "confirm password" o "re-auth"). Aplica tanto
   en el panel de gestión como (a futuro) en el portal de clientes.
 
-### Configuración — renombrar "Habitaciones" → "Alojamientos" (⏳)
-- ⏳ **Renombrar la sección** "Habitaciones" en Configuración a **"Alojamientos"**
-  (el término es más genérico y aplica a cabañas, suites, etc.).
-  Impacta: label en el sidebar, título de la sección, texto de los formularios.
-  La entidad en DB (`habitaciones`) no cambia — es solo vocabulario de UI.
+### Configuración — renombrar "Habitaciones" → "Alojamientos" (✅)
+- ✅ **Renombrado** "Habitaciones" → "Alojamientos" en Configuración: título de sección,
+  botón "+ Alojamiento", modal "Nuevo alojamiento" y texto vacío. La entidad en DB
+  (`habitaciones`) no cambió — solo vocabulario de UI.
 
-### Configuración — nombre y logo de la app personalizables (⏳)
-- ⏳ **Nombre de la aplicación editable** desde Configuración › "Nombre" (campo ya
-  existente en `config`): que el nombre mostrado en sidebar, login y comprobantes
-  use el valor configurado en lugar del hardcodeado "Suites Manager".
+### Configuración — nombre y logo de la app personalizables (✅ / ⏳)
+- ✅ **Nombre de la aplicación editable**: sidebar y topbar mobile ahora leen
+  `config.nombre` via `api.config.get()` (fallback a "Suites Manager").
+  Comprobantes ya usaban `config` desde Impl 4-A.
 - ⏳ **Logo editable con upload de archivo**: el campo "Logo (URL)" actual solo acepta
   una URL. Extenderlo para permitir **subir un archivo** (JPG/PNG) desde el
   dispositivo. Implica: endpoint de upload + almacenamiento de objetos.
   Ver análisis de carga de imágenes más abajo.
 
-### Análisis — Carga de imágenes (logo y alojamientos) (⏳)
+### Análisis — Carga de imágenes (logo y alojamientos) (⏳ — doc listo)
+- ✅ **Estrategia definida y documentada** en `docs/vercel-blob-setup.md`.
+  Pasos, opciones de upload (server-side vs client-side), optimización en browser,
+  schema de tabla `habitacion_fotos` (pendiente de migration), endpoints a crear.
+- ⏳ **Implementación pendiente** (requiere configurar Vercel Blob en el dashboard):
 - ⏳ **Estrategia de almacenamiento y upload** para:
   - Logo del alojamiento (desde Configuración).
   - Fotos de cada unidad/alojamiento (para la ficha y el portal público).
@@ -300,6 +290,40 @@ Ampliación (🔜/⏳):
     si el admin puede configurar campos adicionales obligatorios (dinámico).
   - **Ítems previos necesarios**: características de unidades (catálogo),
     carga de imágenes (Vercel Blob), Google OAuth.
+
+### Administración de la landing page desde el panel (⏳)
+- ⏳ **El admin puede gestionar el contenido y funcionalidades de la landing** desde
+  una nueva sección del panel (solo rol `admin`). Objetivo: que el dueño del alojamiento
+  pueda personalizar el portal público sin tocar código.
+
+  **Alcance tentativo:**
+  - **Hero / portada**: título, subtítulo, texto del CTA y slides del carrusel
+    (foto + chip + texto por slide).
+  - **Sección "Alojamientos"**: las unidades se muestran automáticamente desde la DB
+    (ya funciona); el admin activa/desactiva qué unidades aparecen públicamente.
+  - **Características de unidades**: las comodidades/amenities definidas en
+    Configuración → Alojamientos se muestran en las tarjetas de la landing.
+  - **Fotos por unidad**: las fotos subidas via Vercel Blob aparecen en la landing.
+  - **Secciones de contenido** (a definir qué aplica al negocio):
+    servicios/comodidades generales, ubicación/mapa, texto "Sobre nosotros",
+    galería de imágenes del lugar.
+  - **Datos de contacto y redes sociales** (WhatsApp, Instagram, email de contacto,
+    dirección): editables desde la sección configuración, mostrados en el footer
+    de la landing.
+  - **Formulario de consulta**: habilitar/deshabilitar; las consultas entran como
+    notificaciones al panel (o al email del admin).
+  - **Colores / personalización visual básica**: color de acento primario
+    (por ahora `#0058be` hardcodeado) configurable desde el panel.
+
+  **Prerequisitos:**
+  - Características de unidades (catálogo + asignación) — ya en roadmap ⏳.
+  - Carga de imágenes via Vercel Blob — ya en roadmap ⏳.
+  - Datos de contacto / redes en `config` (ampliar el esquema).
+
+  **Decisiones a tomar al encarar:**
+  - Qué secciones de la landing son configurables vs. fijas.
+  - Si se guarda el contenido en la tabla `config` (como JSONB) o en tablas dedicadas.
+  - Previsualización en tiempo real vs. guardar y recargar.
 
 ---
 

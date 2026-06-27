@@ -9,11 +9,15 @@ import type {
   TarifaReglaCreate,
   TarifaReglaUpdate,
   ConfigUpdate,
+  AmenidadCreate,
+  AmenidadUpdate,
+  HabitacionAmenidadesSet,
 } from "@suites/shared";
 import type {
   ApiClient,
   Habitacion,
   Huesped,
+  HuespedAlojado,
   HistorialItem,
   ReservaListItem,
   ReporteResumen,
@@ -22,6 +26,8 @@ import type {
   Config,
   Usuario,
   PublicHabitacion,
+  Amenidad,
+  HabitacionAmenidad,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -31,6 +37,7 @@ export { ApiError };
 export type {
   Habitacion,
   Huesped,
+  HuespedAlojado,
   HistorialItem,
   ReservaListItem,
   TarifaRegla,
@@ -39,6 +46,8 @@ export type {
   Config,
   Usuario,
   PublicHabitacion,
+  Amenidad,
+  HabitacionAmenidad,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -78,6 +87,7 @@ const realApi: ApiClient = {
   },
   huespedes: {
     list: () => request<Huesped[]>("/huespedes"),
+    alojados: () => request<HuespedAlojado[]>("/huespedes/alojados"),
     create: (data: HuespedCreate) =>
       request<Huesped>("/huespedes", {
         method: "POST",
@@ -92,6 +102,24 @@ const realApi: ApiClient = {
       request<{ ok: true }>(`/huespedes/${id}`, { method: "DELETE" }),
     historial: (id: number) =>
       request<HistorialItem[]>(`/huespedes/${id}/historial`),
+  },
+  amenidades: {
+    list: () => request<Amenidad[]>("/amenidades"),
+    create: (data: AmenidadCreate) =>
+      request<Amenidad>("/amenidades", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: AmenidadUpdate) =>
+      request<Amenidad>(`/amenidades/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/amenidades/${id}`, { method: "DELETE" }),
+  },
+  habitacionAmenidades: {
+    get: (habitacionId: number) =>
+      request<HabitacionAmenidad[]>(`/habitaciones/${habitacionId}/amenidades`),
+    set: (habitacionId: number, data: HabitacionAmenidadesSet) =>
+      request<HabitacionAmenidad[]>(`/habitaciones/${habitacionId}/amenidades`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
   reportes: {
     resumen: (desde: string, hasta: string) =>

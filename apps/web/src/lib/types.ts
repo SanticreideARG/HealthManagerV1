@@ -24,9 +24,38 @@ export interface Huesped {
   id: number;
   nombre: string;
   documento: string | null;
+  tipoDocumento: string | null;
+  nacionalidad: string | null;
+  fechaNacimiento: string | null; // YYYY-MM-DD
   email: string | null;
   telefono: string | null;
   notas: string | null;
+}
+
+export interface HuespedAlojado {
+  id: number;
+  nombre: string;
+  documento: string | null;
+  email: string | null;
+  telefono: string | null;
+  reservaId: number;
+  habitacion: string;
+  checkin: string;
+}
+
+export interface Amenidad {
+  id: number;
+  nombre: string;
+  tipo: "bool" | "texto" | "numero";
+  icono: string | null;
+}
+
+export interface HabitacionAmenidad {
+  amenidadId: number;
+  nombre: string;
+  tipo: "bool" | "texto" | "numero";
+  icono: string | null;
+  valor: string | null;
 }
 
 export interface HistorialItem {
@@ -139,6 +168,7 @@ export interface ApiClient {
   };
   huespedes: {
     list: () => Promise<Huesped[]>;
+    alojados: () => Promise<HuespedAlojado[]>;
     create: (
       data: import("@suites/shared").HuespedCreate,
     ) => Promise<Huesped>;
@@ -148,6 +178,19 @@ export interface ApiClient {
     ) => Promise<Huesped>;
     remove: (id: number) => Promise<{ ok: true }>;
     historial: (id: number) => Promise<HistorialItem[]>;
+  };
+  amenidades: {
+    list: () => Promise<Amenidad[]>;
+    create: (data: import("@suites/shared").AmenidadCreate) => Promise<Amenidad>;
+    update: (id: number, data: import("@suites/shared").AmenidadUpdate) => Promise<Amenidad>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  habitacionAmenidades: {
+    get: (habitacionId: number) => Promise<HabitacionAmenidad[]>;
+    set: (
+      habitacionId: number,
+      data: import("@suites/shared").HabitacionAmenidadesSet,
+    ) => Promise<HabitacionAmenidad[]>;
   };
   reportes: {
     resumen: (desde: string, hasta: string) => Promise<ReporteResumen>;

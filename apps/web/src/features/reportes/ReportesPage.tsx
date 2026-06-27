@@ -100,7 +100,7 @@ export function ReportesPage() {
                     <th className="px-4 py-2 text-right font-semibold">Ingresos</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {q.data.porHabitacion.map((r) => (
                     <tr key={r.habitacion}>
                       <td className="px-4 py-2 font-medium text-slate-800">

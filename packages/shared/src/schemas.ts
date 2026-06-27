@@ -46,6 +46,12 @@ export type HabitacionUpdate = z.infer<typeof habitacionUpdate>;
 export const huespedCreate = z.object({
   nombre: z.string().min(1).max(120),
   documento: z.string().max(40).optional(),
+  tipoDocumento: z.string().max(30).optional(), // DNI | Pasaporte | CE | Otro
+  nacionalidad: z.string().max(80).optional(),
+  fechaNacimiento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD")
+    .optional(),
   email: z.string().email().optional(),
   telefono: z.string().max(40).optional(),
   notas: z.string().max(500).optional(), // preferencias, alergias, etc.
@@ -142,6 +148,29 @@ export const configUpdate = z.object({
   logoUrl: z.string().max(1000).nullable().optional(),
 });
 export type ConfigUpdate = z.infer<typeof configUpdate>;
+
+// ---------- Amenidades (catálogo de características) ----------
+export const tipoAmenidad = z.enum(["bool", "texto", "numero"]);
+export type TipoAmenidad = z.infer<typeof tipoAmenidad>;
+
+export const amenidadCreate = z.object({
+  nombre: z.string().min(1).max(120),
+  tipo: tipoAmenidad.default("bool"),
+  icono: z.string().max(10).optional(),
+});
+export type AmenidadCreate = z.infer<typeof amenidadCreate>;
+
+export const amenidadUpdate = amenidadCreate.partial();
+export type AmenidadUpdate = z.infer<typeof amenidadUpdate>;
+
+// Asignación de amenidades a una habitación (reemplaza el set completo)
+export const habitacionAmenidadesSet = z.array(
+  z.object({
+    amenidadId: z.number().int().positive(),
+    valor: z.string().max(500).nullable().optional(),
+  }),
+);
+export type HabitacionAmenidadesSet = z.infer<typeof habitacionAmenidadesSet>;
 
 // ---------- Pagos ----------
 export const pagoCreate = z.object({

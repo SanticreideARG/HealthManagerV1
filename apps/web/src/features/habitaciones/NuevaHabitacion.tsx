@@ -31,13 +31,13 @@ export function NuevaHabitacion() {
         onClick={() => setAbierto(true)}
         className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
       >
-        + Habitación
+        + Alojamiento
       </button>
     );
   }
 
   return (
-    <Modal onClose={() => setAbierto(false)} titulo="Nueva habitación">
+    <Modal onClose={() => setAbierto(false)} titulo="Nuevo alojamiento">
       <label className="block text-sm">
         Nombre
         <input

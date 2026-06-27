@@ -29,6 +29,8 @@ export function PanelApp() {
   const [vista, setVista] = useState<Vista>("calendario");
   const { tema, toggleTema } = useUi();
   const { data: session, isPending } = useSession();
+  const configQ = useQuery({ queryKey: ["config"], queryFn: api.config.get });
+  const appNombre = configQ.data?.nombre ?? "Suites Manager";
 
   const requiereAuth = !usandoMock;
 
@@ -61,7 +63,7 @@ export function PanelApp() {
     <div className="min-h-screen md:pl-64">
       {/* Sidebar (desktop) */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white md:flex">
-        <Brand />
+        <Brand nombre={appNombre} />
         <nav className="flex-1 space-y-1 px-3 py-4">
           {items.map((n) => (
             <NavButton
@@ -85,7 +87,7 @@ export function PanelApp() {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
           <img src={logo} alt="" className="h-8 w-8 rounded-lg" />
-          <span className="font-bold text-slate-800">Suites Manager</span>
+          <span className="font-bold text-slate-800">{appNombre}</span>
         </div>
         <div className="flex items-center gap-1">
           <IconBtn onClick={toggleTema} title="Cambiar tema">
@@ -137,12 +139,12 @@ export function PanelApp() {
   );
 }
 
-function Brand() {
+function Brand({ nombre }: { nombre: string }) {
   return (
     <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
       <img src={logo} alt="" className="h-10 w-10 rounded-xl" />
       <div className="leading-tight">
-        <div className="font-bold text-slate-800">Suites Manager</div>
+        <div className="font-bold text-slate-800">{nombre}</div>
         <div className="text-xs text-slate-400">Gestión de hoteles</div>
       </div>
     </div>
