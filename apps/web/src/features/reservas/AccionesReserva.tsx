@@ -218,7 +218,7 @@ export function AccionesReserva({
             {generando ? "Generando…" : "📄 Descargar comprobante (PDF)"}
           </button>
 
-          <PagosSection reservaId={reserva.id} />
+          <PagosSection reservaId={reserva.id} totalReserva={Number(reserva.total)} />
 
           <div className="flex gap-2 pt-2">
             {reserva.estado === "reservada" && (
@@ -258,7 +258,7 @@ const TIPO_ICONO: Record<string, string> = {
   efectivo: "💵", transferencia: "🏦", tarjeta: "💳", qr: "📱", billetera: "👜",
 };
 
-function PagosSection({ reservaId }: { reservaId: number }) {
+function PagosSection({ reservaId, totalReserva }: { reservaId: number; totalReserva: number }) {
   const qc = useQueryClient();
   const pagosQ = useQuery({
     queryKey: ["pagos", reservaId],
@@ -309,17 +309,15 @@ function PagosSection({ reservaId }: { reservaId: number }) {
 
   const pagos = pagosQ.data ?? [];
   const totalPagado = pagos.reduce((acc, p) => acc + Number(p.monto), 0);
+  const pendiente = Math.max(0, totalReserva - totalPagado);
+  const pct = totalReserva > 0 ? Math.min(100, (totalPagado / totalReserva) * 100) : 0;
+  const fmt = (n: number) => `$${n.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700">
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
           💰 Pagos
-          {pagos.length > 0 && (
-            <span className="ml-2 text-slate-400 font-normal">
-              cobrado: ${totalPagado.toLocaleString("es-AR")}
-            </span>
-          )}
         </span>
         {!abierto && (
           <button
@@ -330,6 +328,30 @@ function PagosSection({ reservaId }: { reservaId: number }) {
           </button>
         )}
       </div>
+
+      {/* Barra de saldo */}
+      {totalReserva > 0 && (
+        <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3 space-y-2">
+          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Cobrado: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{fmt(totalPagado)}</span></span>
+            <span>Total: <span className="font-semibold text-slate-700 dark:text-slate-200">{fmt(totalReserva)}</span></span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+            <div
+              className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-emerald-500" : "bg-amber-400"}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {pendiente > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Pendiente: {fmt(pendiente)}
+            </p>
+          )}
+          {pendiente === 0 && totalPagado > 0 && (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">✓ Saldo completo</p>
+          )}
+        </div>
+      )}
 
       {/* Lista de pagos existentes */}
       {pagos.length > 0 && (

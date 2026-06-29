@@ -11,6 +11,8 @@ import { LandingFooter } from "./LandingFooter.js";
 export function LandingPage() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [filtroCapacidad, setFiltroCapacidad] = useState(0);
+  const [disponibles, setDisponibles] = useState<number[] | null>(null);
+  const [buscando, setBuscando] = useState(false);
 
   const { data: unidades, isLoading, isError } = useQuery({
     queryKey: ["landing.habitaciones"],
@@ -19,13 +21,29 @@ export function LandingPage() {
     retry: 2,
   });
 
-  const unidadesFiltradas =
-    filtroCapacidad > 1
-      ? (unidades ?? []).filter((u) => u.capacidad >= filtroCapacidad)
-      : (unidades ?? []);
+  const unidadesFiltradas = (unidades ?? []).filter((u) => {
+    if (filtroCapacidad > 1 && u.capacidad < filtroCapacidad) return false;
+    if (disponibles !== null && !disponibles.includes(u.id)) return false;
+    return true;
+  });
 
-  function handleSearch(_checkin: string, _checkout: string, guests: number) {
+  const hayFiltroActivo = filtroCapacidad > 1 || disponibles !== null;
+
+  async function handleSearch(checkin: string, checkout: string, guests: number) {
     setFiltroCapacidad(guests);
+    if (checkin && checkout) {
+      setBuscando(true);
+      try {
+        const result = await api.landing.disponibilidad(checkin, checkout);
+        setDisponibles(result.disponibles);
+      } catch {
+        setDisponibles(null);
+      } finally {
+        setBuscando(false);
+      }
+    } else {
+      setDisponibles(null);
+    }
     setTimeout(
       () =>
         document
@@ -33,6 +51,11 @@ export function LandingPage() {
           ?.scrollIntoView({ behavior: "smooth" }),
       50,
     );
+  }
+
+  function limpiarFiltros() {
+    setFiltroCapacidad(0);
+    setDisponibles(null);
   }
 
   function handleReservar(_id: number) {
@@ -75,16 +98,16 @@ export function LandingPage() {
           <div className="flex-1">
             <div className="mb-5 flex items-center justify-between">
               <p className="text-sm text-slate-500 dark:text-white/40">
-                {isLoading
-                  ? "Cargando…"
+                {isLoading || buscando
+                  ? "Buscando…"
                   : `${unidadesFiltradas.length} alojamiento${unidadesFiltradas.length !== 1 ? "s" : ""} disponible${unidadesFiltradas.length !== 1 ? "s" : ""}`}
               </p>
-              {filtroCapacidad > 1 && (
+              {hayFiltroActivo && (
                 <button
-                  onClick={() => setFiltroCapacidad(0)}
+                  onClick={limpiarFiltros}
                   className="text-sm text-[#0058be] transition hover:text-[#2170e4]"
                 >
-                  × Limpiar filtro ({filtroCapacidad} personas)
+                  × Limpiar filtros
                 </button>
               )}
             </div>
@@ -110,13 +133,13 @@ export function LandingPage() {
               </div>
             ) : unidadesFiltradas.length === 0 ? (
               <div className="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-white/[0.08] dark:bg-white/[0.03]">
-                {filtroCapacidad > 1 ? (
+                {hayFiltroActivo ? (
                   <>
                     <p className="text-slate-500 dark:text-white/50">
-                      No hay alojamientos disponibles para {filtroCapacidad} personas.
+                      No hay alojamientos disponibles para los filtros seleccionados.
                     </p>
                     <button
-                      onClick={() => setFiltroCapacidad(0)}
+                      onClick={limpiarFiltros}
                       className="mt-3 text-sm text-[#0058be] hover:text-[#2170e4]"
                     >
                       Ver todos los alojamientos

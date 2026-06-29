@@ -58,7 +58,7 @@ export type {
 } from "./schema.js";
 
 // Operadores de Drizzle (una sola instancia; ver nota en package del repo).
-export { and, asc, desc, eq, gte, lt, ne } from "drizzle-orm";
+export { and, asc, desc, eq, gt, gte, lt, ne, sql as drizzleSql } from "drizzle-orm";
 
 /** Código que lanza Postgres cuando se viola un EXCLUDE constraint. */
 export const PG_EXCLUSION_VIOLATION = "23P01";

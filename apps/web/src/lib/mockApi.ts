@@ -255,8 +255,25 @@ export const mockApi: ApiClient = {
           tipo: h.tipo,
           capacidad: h.capacidad,
           tarifaBase: h.tarifaBase,
+          fotoUrl: null,
         })),
       ),
+    disponibilidad: (checkin: string, checkout: string) => {
+      const bloqueadas = new Set(
+        reservas
+          .filter(
+            (r) =>
+              r.estado !== "cancelada" &&
+              r.checkin < checkout &&
+              r.checkout > checkin,
+          )
+          .map((r) => r.habitacionId),
+      );
+      const disponibles = habitaciones
+        .filter((h) => !bloqueadas.has(h.id))
+        .map((h) => h.id);
+      return delay({ checkin, checkout, disponibles });
+    },
   },
   habitaciones: {
     list: () => delay([...habitaciones]),

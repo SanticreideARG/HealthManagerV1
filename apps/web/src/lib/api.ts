@@ -110,6 +110,10 @@ async function upload<T>(path: string, file: File, method = "POST"): Promise<T> 
 const realApi: ApiClient = {
   landing: {
     habitaciones: () => request<PublicHabitacion[]>("/public/habitaciones"),
+    disponibilidad: (checkin: string, checkout: string) =>
+      request<{ checkin: string; checkout: string; disponibles: number[] }>(
+        `/public/disponibilidad?checkin=${checkin}&checkout=${checkout}`,
+      ),
   },
   habitaciones: {
     list: () => request<Habitacion[]>("/habitaciones"),

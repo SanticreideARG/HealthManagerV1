@@ -230,6 +230,7 @@ export interface PublicHabitacion {
   tipo: string;
   capacidad: number;
   tarifaBase: string;
+  fotoUrl: string | null;
 }
 
 export class ApiError extends Error {
@@ -252,6 +253,7 @@ export class ApiError extends Error {
 export interface ApiClient {
   landing: {
     habitaciones: () => Promise<PublicHabitacion[]>;
+    disponibilidad: (checkin: string, checkout: string) => Promise<{ checkin: string; checkout: string; disponibles: number[] }>;
   };
   habitaciones: {
     list: () => Promise<Habitacion[]>;

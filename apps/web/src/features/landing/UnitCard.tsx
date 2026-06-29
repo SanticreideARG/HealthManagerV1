@@ -38,12 +38,20 @@ export function UnitCard({
 
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#0058be] dark:hover:bg-white/[0.05]">
-      {/* Imagen placeholder */}
-      <div
-        className={`flex h-44 items-center justify-center bg-gradient-to-br ${style.gradient}`}
-      >
-        <span className="select-none text-5xl">{style.emoji}</span>
-      </div>
+      {/* Imagen */}
+      {unit.fotoUrl ? (
+        <img
+          src={unit.fotoUrl}
+          alt={unit.nombre}
+          className="h-44 w-full object-cover"
+        />
+      ) : (
+        <div
+          className={`flex h-44 items-center justify-center bg-gradient-to-br ${style.gradient}`}
+        >
+          <span className="select-none text-5xl">{style.emoji}</span>
+        </div>
+      )}
 
       <div className="p-5">
         <span className="mb-2 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-widest text-slate-600 dark:bg-white/[0.06] dark:text-white/60">
