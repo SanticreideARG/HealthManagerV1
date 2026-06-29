@@ -14,10 +14,11 @@ import { TarifasPage } from "./features/tarifas/TarifasPage.js";
 import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
 import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
 import { LandingManagerPage } from "./features/landing-manager/LandingManagerPage.js";
+import { HousekeepingPage } from "./features/housekeeping/HousekeepingPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import logo from "./assets/suites-man-logo.png";
 
-type Vista = "calendario" | "huespedes" | "reportes" | "tarifas" | "landing" | "config";
+type Vista = "calendario" | "huespedes" | "housekeeping" | "reportes" | "tarifas" | "landing" | "config";
 
 interface NavDef {
   id: Vista;
@@ -159,6 +160,7 @@ export function PanelApp() {
         {vista === "calendario" && <CalendarioView />}
         {vista === "huespedes" && <HuespedesPage />}
         {vista === "reportes" && esAdmin && <ReportesPage />}
+        {vista === "housekeeping" && <HousekeepingPage />}
         {vista === "tarifas" && esAdmin && <TarifasPage />}
         {vista === "landing" && esAdmin && <LandingManagerPage />}
         {vista === "config" && esAdmin && <ConfiguracionPage />}
@@ -481,9 +483,19 @@ const iconLanding = (
   </svg>
 );
 
+const iconBroom = (
+  <svg {...svgProps}>
+    <path d="M9 4L5 20" strokeLinecap="round"/>
+    <path d="M5 20h8" strokeLinecap="round"/>
+    <path d="M9 4c0 0 6 2 8 8" strokeLinecap="round"/>
+    <path d="M13 20c0-4 4-8 4-8" strokeLinecap="round"/>
+  </svg>
+);
+
 const NAV_MAIN: NavDef[] = [
-  { id: "calendario", label: "Calendario", icon: iconCalendar },
-  { id: "huespedes", label: "Huéspedes", icon: iconUsers },
+  { id: "calendario",   label: "Calendario",   icon: iconCalendar },
+  { id: "huespedes",    label: "Huéspedes",    icon: iconUsers },
+  { id: "housekeeping", label: "Housekeeping", icon: iconBroom },
 ];
 
 const NAV_ADMIN: NavDef[] = [

@@ -233,6 +233,26 @@ export interface PublicHabitacion {
   fotoUrl: string | null;
 }
 
+export type TipoTareaHK = "limpieza" | "mantenimiento" | "inspeccion";
+export type PrioridadHK = "baja" | "normal" | "alta" | "urgente";
+export type EstadoHK = "pendiente" | "en_proceso" | "completado" | "cancelado";
+
+export interface TareaHousekeeping {
+  id: number;
+  habitacionId: number;
+  habitacionNombre: string | null;
+  reservaId: number | null;
+  tipo: TipoTareaHK;
+  descripcion: string | null;
+  prioridad: PrioridadHK;
+  estado: EstadoHK;
+  fechaProgramada: string;
+  asignadoA: string | null;
+  notas: string | null;
+  completadoAt: string | null;
+  createdAt: string;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -349,6 +369,12 @@ export interface ApiClient {
       id: number,
       data: import("@suites/shared").TarifaReglaUpdate,
     ) => Promise<TarifaRegla>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  housekeeping: {
+    list: (params?: { estado?: string; habitacionId?: number; desde?: string; hasta?: string }) => Promise<TareaHousekeeping[]>;
+    create: (data: import("@suites/shared").TareaHousekeepingCreate) => Promise<TareaHousekeeping>;
+    update: (id: number, data: import("@suites/shared").TareaHousekeepingUpdate) => Promise<TareaHousekeeping>;
     remove: (id: number) => Promise<{ ok: true }>;
   };
   reservas: {

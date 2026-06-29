@@ -1,4 +1,6 @@
 import type {
+  TareaHousekeepingCreate,
+  TareaHousekeepingUpdate,
   HabitacionCreate,
   HabitacionUpdate,
   HuespedCreate,
@@ -23,6 +25,7 @@ import type {
 } from "@suites/shared";
 import type {
   ApiClient,
+  TareaHousekeeping,
   Habitacion,
   Huesped,
   HuespedAlojado,
@@ -52,6 +55,7 @@ import { mockApi } from "./mockApi.js";
 // Re-export para no romper imports existentes (`from "../lib/api.js"`).
 export { ApiError };
 export type {
+  TareaHousekeeping,
   Habitacion,
   Huesped,
   HuespedAlojado,
@@ -108,6 +112,22 @@ async function upload<T>(path: string, file: File, method = "POST"): Promise<T> 
 }
 
 const realApi: ApiClient = {
+  housekeeping: {
+    list: (params?) => {
+      const qs = new URLSearchParams();
+      if (params?.estado)       qs.set("estado",       params.estado);
+      if (params?.habitacionId) qs.set("habitacionId", String(params.habitacionId));
+      if (params?.desde)        qs.set("desde",        params.desde);
+      if (params?.hasta)        qs.set("hasta",        params.hasta);
+      return request<TareaHousekeeping[]>(`/housekeeping?${qs}`);
+    },
+    create: (data: TareaHousekeepingCreate) =>
+      request<TareaHousekeeping>("/housekeeping", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: TareaHousekeepingUpdate) =>
+      request<TareaHousekeeping>(`/housekeeping/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/housekeeping/${id}`, { method: "DELETE" }),
+  },
   landing: {
     habitaciones: () => request<PublicHabitacion[]>("/public/habitaciones"),
     disponibilidad: (checkin: string, checkout: string) =>

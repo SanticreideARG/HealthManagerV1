@@ -20,6 +20,7 @@ import type {
   Impuesto,
   MetodoPago,
   PagoRegistrado,
+  TareaHousekeeping,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -183,6 +184,41 @@ const metodosPagoMock: MetodoPago[] = [
 let seqPago = 0;
 const pagosMock: PagoRegistrado[] = [];
 
+// ---- Housekeeping (mock) ----
+let seqHK = 0;
+const hkMock: TareaHousekeeping[] = [
+  {
+    id: ++seqHK, habitacionId: 1, habitacionNombre: "Cabaña 1", reservaId: null,
+    tipo: "limpieza", descripcion: "Limpieza post check-out", prioridad: "alta",
+    estado: "pendiente", fechaProgramada: hoy, asignadoA: null, notas: null,
+    completadoAt: null, createdAt: new Date().toISOString(),
+  },
+  {
+    id: ++seqHK, habitacionId: 2, habitacionNombre: "Cabaña 2", reservaId: null,
+    tipo: "limpieza", descripcion: "Limpieza semanal", prioridad: "normal",
+    estado: "en_proceso", fechaProgramada: hoy, asignadoA: "María García", notas: null,
+    completadoAt: null, createdAt: new Date().toISOString(),
+  },
+  {
+    id: ++seqHK, habitacionId: 3, habitacionNombre: "Suite Río", reservaId: null,
+    tipo: "inspeccion", descripcion: "Inspección antes de ocupación", prioridad: "alta",
+    estado: "pendiente", fechaProgramada: hoy, asignadoA: null, notas: "Verificar A/C y TV",
+    completadoAt: null, createdAt: new Date().toISOString(),
+  },
+  {
+    id: ++seqHK, habitacionId: 4, habitacionNombre: "Hab. 101", reservaId: null,
+    tipo: "mantenimiento", descripcion: "Cambio de luminaria baño", prioridad: "baja",
+    estado: "pendiente", fechaProgramada: addDays(hoy, 1), asignadoA: "Carlos López", notas: null,
+    completadoAt: null, createdAt: new Date().toISOString(),
+  },
+  {
+    id: ++seqHK, habitacionId: 1, habitacionNombre: "Cabaña 1", reservaId: null,
+    tipo: "limpieza", descripcion: "Limpieza pre check-in", prioridad: "normal",
+    estado: "completado", fechaProgramada: addDays(hoy, -1), asignadoA: "María García", notas: null,
+    completadoAt: new Date().toISOString(), createdAt: new Date().toISOString(),
+  },
+];
+
 // ---- Fotos de habitaciones (mock) ----
 let seqFoto = 0;
 const habitacionFotosMock: Record<number, HabitacionFoto[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
@@ -246,6 +282,57 @@ function seSolapan(
 }
 
 export const mockApi: ApiClient = {
+  housekeeping: {
+    list: (params?) => {
+      let result = [...hkMock];
+      if (params?.estado)       result = result.filter(t => t.estado === params.estado);
+      if (params?.habitacionId) result = result.filter(t => t.habitacionId === params.habitacionId);
+      if (params?.desde)        result = result.filter(t => t.fechaProgramada >= params.desde!);
+      if (params?.hasta)        result = result.filter(t => t.fechaProgramada < params.hasta!);
+      return delay([...result].sort((a, b) => a.fechaProgramada.localeCompare(b.fechaProgramada)));
+    },
+    create: (data) => {
+      const hab = habitaciones.find(h => h.id === data.habitacionId);
+      const t: TareaHousekeeping = {
+        id: ++seqHK,
+        habitacionId: data.habitacionId,
+        habitacionNombre: hab?.nombre ?? null,
+        reservaId: data.reservaId ?? null,
+        tipo: data.tipo ?? "limpieza",
+        descripcion: data.descripcion ?? null,
+        prioridad: data.prioridad ?? "normal",
+        estado: "pendiente",
+        fechaProgramada: data.fechaProgramada,
+        asignadoA: data.asignadoA ?? null,
+        notas: data.notas ?? null,
+        completadoAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      hkMock.push(t);
+      return delay({ ...t });
+    },
+    update: (id, data) => {
+      const t = hkMock.find(x => x.id === id);
+      if (!t) throw new ApiError(404, "No encontrada");
+      if (data.tipo !== undefined) t.tipo = data.tipo;
+      if (data.descripcion !== undefined) t.descripcion = data.descripcion;
+      if (data.prioridad !== undefined) t.prioridad = data.prioridad;
+      if (data.estado !== undefined) {
+        t.estado = data.estado;
+        t.completadoAt = data.estado === "completado" ? new Date().toISOString() : null;
+      }
+      if (data.fechaProgramada !== undefined) t.fechaProgramada = data.fechaProgramada;
+      if (data.asignadoA !== undefined) t.asignadoA = data.asignadoA;
+      if (data.notas !== undefined) t.notas = data.notas;
+      return delay({ ...t });
+    },
+    remove: (id) => {
+      const idx = hkMock.findIndex(x => x.id === id);
+      if (idx === -1) throw new ApiError(404, "No encontrada");
+      hkMock.splice(idx, 1);
+      return delay({ ok: true as const });
+    },
+  },
   landing: {
     habitaciones: () =>
       delay(

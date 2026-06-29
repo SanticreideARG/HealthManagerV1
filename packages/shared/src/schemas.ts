@@ -256,3 +256,36 @@ export const pagoRegistrar = z.object({
   notas: z.string().max(1000).optional(),
 });
 export type PagoRegistrar = z.infer<typeof pagoRegistrar>;
+
+// ---------- Housekeeping ----------
+export const tipoTareaHousekeeping = z.enum(["limpieza", "mantenimiento", "inspeccion"]);
+export type TipoTareaHousekeeping = z.infer<typeof tipoTareaHousekeeping>;
+
+export const prioridadHousekeeping = z.enum(["baja", "normal", "alta", "urgente"]);
+export type PrioridadHousekeeping = z.infer<typeof prioridadHousekeeping>;
+
+export const estadoHousekeeping = z.enum(["pendiente", "en_proceso", "completado", "cancelado"]);
+export type EstadoHousekeeping = z.infer<typeof estadoHousekeeping>;
+
+export const tareaHousekeepingCreate = z.object({
+  habitacionId: z.number().int().positive(),
+  reservaId: z.number().int().positive().optional(),
+  tipo: tipoTareaHousekeeping.default("limpieza"),
+  descripcion: z.string().max(500).optional(),
+  prioridad: prioridadHousekeeping.default("normal"),
+  fechaProgramada: fechaISO,
+  asignadoA: z.string().max(120).optional(),
+  notas: z.string().max(500).optional(),
+});
+export type TareaHousekeepingCreate = z.infer<typeof tareaHousekeepingCreate>;
+
+export const tareaHousekeepingUpdate = z.object({
+  tipo: tipoTareaHousekeeping.optional(),
+  descripcion: z.string().max(500).nullable().optional(),
+  prioridad: prioridadHousekeeping.optional(),
+  estado: estadoHousekeeping.optional(),
+  fechaProgramada: fechaISO.optional(),
+  asignadoA: z.string().max(120).nullable().optional(),
+  notas: z.string().max(500).nullable().optional(),
+});
+export type TareaHousekeepingUpdate = z.infer<typeof tareaHousekeepingUpdate>;

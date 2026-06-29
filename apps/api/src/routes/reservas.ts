@@ -11,6 +11,7 @@ import {
   habitaciones,
   huespedes,
   reservas,
+  tareasHousekeeping,
   PG_EXCLUSION_VIOLATION,
 } from "@suites/db";
 import { reservaCreate, reservaUpdate, bloqueoCreate } from "@suites/shared";
@@ -245,6 +246,17 @@ reservasRoutes.post("/:id/checkout", async (c) => {
     .where(eq(reservas.id, id))
     .returning();
   if (!row) return c.json({ error: "No encontrada" }, 404);
+
+  // Auto-crear tarea de limpieza para el día de checkout
+  await db.insert(tareasHousekeeping).values({
+    habitacionId: row.habitacionId,
+    reservaId: id,
+    tipo: "limpieza",
+    prioridad: "alta",
+    fechaProgramada: row.checkout,
+    descripcion: "Limpieza post check-out",
+  } as any);
+
   return c.json(row);
 });
 

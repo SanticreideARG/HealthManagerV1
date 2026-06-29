@@ -273,6 +273,25 @@ export const authVerification = pgTable("auth_verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// ---------- Housekeeping ----------
+export const tareasHousekeeping = pgTable("tareas_housekeeping", {
+  id: serial("id").primaryKey(),
+  habitacionId: integer("habitacion_id")
+    .notNull()
+    .references(() => habitaciones.id),
+  reservaId: integer("reserva_id").references(() => reservas.id),
+  tipo: varchar("tipo", { length: 30 }).notNull().default("limpieza"),
+  descripcion: text("descripcion"),
+  prioridad: varchar("prioridad", { length: 20 }).notNull().default("normal"),
+  estado: varchar("estado", { length: 20 }).notNull().default("pendiente"),
+  fechaProgramada: date("fecha_programada").notNull(),
+  asignadoA: varchar("asignado_a", { length: 120 }),
+  notas: text("notas"),
+  completadoAt: timestamp("completado_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type TareaHousekeeping = typeof tareasHousekeeping.$inferSelect;
+
 export type Habitacion = typeof habitaciones.$inferSelect;
 export type Huesped = typeof huespedes.$inferSelect;
 export type Reserva = typeof reservas.$inferSelect;

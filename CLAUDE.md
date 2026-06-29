@@ -161,8 +161,6 @@ ni backend. Útil para verificar UI. Muestra un banner ámbar. Replica las regla
 - **Hacer commit en cada cambio importante.** Mensajes en español.
 - Identidad de commits de este repo: `SanticreideARG <santi.creide@gmail.com>`
   (configurada como git config LOCAL del repo).
-- Terminar los mensajes de commit con:
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
 - `.env` NUNCA se commitea (está en `.gitignore`).
 
 ## Estado actual (al día)
