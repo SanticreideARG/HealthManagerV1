@@ -15,6 +15,8 @@ import { impuestosRoutes } from "./routes/impuestos.js";
 import { metodosPagoRoutes } from "./routes/metodosPago.js";
 import { pagosRoutes } from "./routes/pagos.js";
 import { housekeepingRoutes } from "./routes/housekeeping.js";
+import { serviciosRoutes } from "./routes/servicios.js";
+import { consumosRoutes } from "./routes/consumos.js";
 import { auth } from "./auth.js";
 
 /** App Hono sin servidor: la consume server.ts (local) y api/index.ts (Vercel). */
@@ -50,6 +52,8 @@ app.route("/impuestos", impuestosRoutes);
 app.route("/metodos-pago", metodosPagoRoutes);
 app.route("/pagos", pagosRoutes);
 app.route("/housekeeping", housekeepingRoutes);
+app.route("/servicios", serviciosRoutes);
+app.route("/consumos", consumosRoutes);
 app.route("/public", publicRoutes);
 
 export default app;

@@ -21,6 +21,8 @@ import type {
   MetodoPago,
   PagoRegistrado,
   TareaHousekeeping,
+  Servicio,
+  Consumo,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -183,6 +185,20 @@ const metodosPagoMock: MetodoPago[] = [
 
 let seqPago = 0;
 const pagosMock: PagoRegistrado[] = [];
+
+// ---- Servicios adicionales / Consumos (mock) ----
+let seqServicio = 0;
+const serviciosMock: Servicio[] = [
+  { id: ++seqServicio, nombre: "Desayuno continental", descripcion: null, precio: "1500.00", unidad: "persona", categoria: "comida", activo: true },
+  { id: ++seqServicio, nombre: "Almuerzo", descripcion: null, precio: "2500.00", unidad: "persona", categoria: "comida", activo: true },
+  { id: ++seqServicio, nombre: "Cena", descripcion: null, precio: "3000.00", unidad: "persona", categoria: "comida", activo: true },
+  { id: ++seqServicio, nombre: "Transfer aeropuerto", descripcion: null, precio: "8000.00", unidad: "unidad", categoria: "transporte", activo: true },
+  { id: ++seqServicio, nombre: "Lavandería", descripcion: null, precio: "1200.00", unidad: "kg", categoria: "lavanderia", activo: true },
+  { id: ++seqServicio, nombre: "Late check-out (por hora)", descripcion: null, precio: "2000.00", unidad: "hora", categoria: "alojamiento", activo: true },
+];
+
+let seqConsumo = 0;
+const consumosMock: Consumo[] = [];
 
 // ---- Housekeeping (mock) ----
 let seqHK = 0;
@@ -757,6 +773,70 @@ export const mockApi: ApiClient = {
       };
       pagosMock.push(pago);
       return delay(pago);
+    },
+  },
+  servicios: {
+    list: () => delay([...serviciosMock].sort((a, b) => a.nombre.localeCompare(b.nombre))),
+    create: (data) => {
+      const s: Servicio = {
+        id: ++seqServicio,
+        nombre: data.nombre,
+        descripcion: data.descripcion ?? null,
+        precio: String(data.precio),
+        unidad: data.unidad ?? "unidad",
+        categoria: data.categoria ?? null,
+        activo: data.activo ?? true,
+      };
+      serviciosMock.push(s);
+      return delay(s);
+    },
+    update: (id, data) => {
+      const s = serviciosMock.find((x) => x.id === id);
+      if (!s) return Promise.reject(new ApiError(404, "No encontrado"));
+      if (data.nombre !== undefined) s.nombre = data.nombre;
+      if (data.descripcion !== undefined) s.descripcion = data.descripcion ?? null;
+      if (data.precio !== undefined) s.precio = String(data.precio);
+      if (data.unidad !== undefined) s.unidad = data.unidad;
+      if (data.categoria !== undefined) s.categoria = data.categoria ?? null;
+      if (data.activo !== undefined) s.activo = data.activo;
+      return delay({ ...s });
+    },
+    remove: (id) => {
+      const i = serviciosMock.findIndex((x) => x.id === id);
+      if (i >= 0) serviciosMock.splice(i, 1);
+      return delay({ ok: true } as const);
+    },
+  },
+  consumos: {
+    list: (reservaId) =>
+      delay([...consumosMock].filter((c) => c.reservaId === reservaId).sort((a, b) => a.fecha.localeCompare(b.fecha))),
+    create: (data) => {
+      const r = reservas.find((x) => x.id === data.reservaId);
+      if (!r) return Promise.reject(new ApiError(404, "Reserva inexistente"));
+      const cantidad = data.cantidad ?? 1;
+      const subtotal = Math.round(cantidad * data.precioUnit * 100) / 100;
+      const c: Consumo = {
+        id: ++seqConsumo,
+        reservaId: data.reservaId,
+        servicioId: data.servicioId ?? null,
+        descripcion: data.descripcion,
+        cantidad: String(cantidad),
+        precioUnit: String(data.precioUnit),
+        subtotal: String(subtotal),
+        fecha: new Date().toISOString(),
+        notas: data.notas ?? null,
+      };
+      consumosMock.push(c);
+      r.total = String(Number(r.total) + subtotal);
+      return delay(c);
+    },
+    remove: (id) => {
+      const i = consumosMock.findIndex((x) => x.id === id);
+      if (i === -1) return Promise.reject(new ApiError(404, "No encontrado"));
+      const [c] = consumosMock.splice(i, 1) as [Consumo];
+      const r = reservas.find((x) => x.id === c.reservaId);
+      if (r) r.total = String(Number(r.total) - Number(c.subtotal));
+      return delay({ ok: true } as const);
     },
   },
   reportes: {

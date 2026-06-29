@@ -18,6 +18,13 @@ export interface Negocio {
   email: string;
 }
 
+export interface ExtraComprobante {
+  descripcion: string;
+  cantidad: number;
+  precioUnit: number;
+  subtotal: number;
+}
+
 export interface DatosComprobante {
   numero: string;
   emitido: string; // YYYY-MM-DD
@@ -28,6 +35,8 @@ export interface DatosComprobante {
   noches: number;
   tarifa: number;
   total: number;
+  totalAlojamiento: number;
+  extras: ExtraComprobante[];
 }
 
 const ars = (n: number) =>
@@ -159,15 +168,29 @@ export function ComprobanteDoc({
             </Text>
             <Text style={styles.colNum}>{datos.noches}</Text>
             <Text style={styles.colNum}>{ars(datos.tarifa)}</Text>
-            <Text style={styles.colNum}>{ars(datos.tarifa * datos.noches)}</Text>
+            <Text style={styles.colNum}>{ars(datos.totalAlojamiento)}</Text>
           </View>
+          {datos.extras.map((e, i) => (
+            <View key={i} style={styles.tablaRow}>
+              <Text style={styles.colDesc}>{e.descripcion}</Text>
+              <Text style={styles.colNum}>{e.cantidad}</Text>
+              <Text style={styles.colNum}>{ars(e.precioUnit)}</Text>
+              <Text style={styles.colNum}>{ars(e.subtotal)}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.totalBox}>
           <View style={styles.totalFila}>
-            <Text>Subtotal</Text>
-            <Text>{ars(datos.total)}</Text>
+            <Text>Alojamiento</Text>
+            <Text>{ars(datos.totalAlojamiento)}</Text>
           </View>
+          {datos.extras.length > 0 && (
+            <View style={styles.totalFila}>
+              <Text>Extras</Text>
+              <Text>{ars(datos.total - datos.totalAlojamiento)}</Text>
+            </View>
+          )}
           <View style={styles.totalFinal}>
             <Text>TOTAL</Text>
             <Text>{ars(datos.total)}</Text>
@@ -190,8 +213,12 @@ export function armarDatos(input: {
   checkin: string;
   checkout: string;
   total: number;
+  extras?: ExtraComprobante[];
 }): DatosComprobante {
   const noches = Math.max(1, diffDays(input.checkin, input.checkout));
+  const extras = input.extras ?? [];
+  const totalExtras = extras.reduce((acc, e) => acc + e.subtotal, 0);
+  const totalAlojamiento = input.total - totalExtras;
   return {
     numero: String(input.reservaId).padStart(8, "0"),
     emitido: new Date().toISOString().slice(0, 10),
@@ -200,8 +227,10 @@ export function armarDatos(input: {
     checkin: input.checkin,
     checkout: input.checkout,
     noches,
-    tarifa: input.total / noches,
+    tarifa: totalAlojamiento / noches,
     total: input.total,
+    totalAlojamiento,
+    extras,
   };
 }
 

@@ -289,3 +289,27 @@ export const tareaHousekeepingUpdate = z.object({
   notas: z.string().max(500).nullable().optional(),
 });
 export type TareaHousekeepingUpdate = z.infer<typeof tareaHousekeepingUpdate>;
+
+// ---------- Servicios adicionales / Consumos ----------
+export const servicioCreate = z.object({
+  nombre: z.string().min(1).max(120),
+  descripcion: z.string().max(500).nullable().optional(),
+  precio: z.number().nonnegative(),
+  unidad: z.string().min(1).max(40).default("unidad"),
+  categoria: z.string().max(60).nullable().optional(),
+  activo: z.boolean().default(true),
+});
+export type ServicioCreate = z.infer<typeof servicioCreate>;
+
+export const servicioUpdate = servicioCreate.partial();
+export type ServicioUpdate = z.infer<typeof servicioUpdate>;
+
+export const consumoCreate = z.object({
+  reservaId: z.number().int().positive(),
+  servicioId: z.number().int().positive().optional(),
+  descripcion: z.string().min(1).max(200),
+  cantidad: z.number().positive().default(1),
+  precioUnit: z.number().nonnegative(),
+  notas: z.string().max(500).optional(),
+});
+export type ConsumoCreate = z.infer<typeof consumoCreate>;

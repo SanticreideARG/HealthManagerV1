@@ -292,6 +292,38 @@ export const tareasHousekeeping = pgTable("tareas_housekeeping", {
 });
 export type TareaHousekeeping = typeof tareasHousekeeping.$inferSelect;
 
+// ---------- Servicios adicionales / Consumos ----------
+export const servicios = pgTable("servicios", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 120 }).notNull(),
+  descripcion: text("descripcion"),
+  precio: numeric("precio", { precision: 12, scale: 2 }).notNull().default("0"),
+  unidad: varchar("unidad", { length: 40 }).notNull().default("unidad"),
+  categoria: varchar("categoria", { length: 60 }),
+  activo: boolean("activo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type Servicio = typeof servicios.$inferSelect;
+
+export const consumos = pgTable(
+  "consumos",
+  {
+    id: serial("id").primaryKey(),
+    reservaId: integer("reserva_id")
+      .notNull()
+      .references(() => reservas.id),
+    servicioId: integer("servicio_id").references(() => servicios.id),
+    descripcion: varchar("descripcion", { length: 200 }).notNull(),
+    cantidad: numeric("cantidad", { precision: 8, scale: 2 }).notNull().default("1"),
+    precioUnit: numeric("precio_unit", { precision: 12, scale: 2 }).notNull(),
+    subtotal: numeric("subtotal", { precision: 12, scale: 2 }).notNull(),
+    fecha: timestamp("fecha", { withTimezone: true }).notNull().defaultNow(),
+    notas: text("notas"),
+  },
+  (t) => [index("idx_consumos_reserva").on(t.reservaId)],
+);
+export type Consumo = typeof consumos.$inferSelect;
+
 export type Habitacion = typeof habitaciones.$inferSelect;
 export type Huesped = typeof huespedes.$inferSelect;
 export type Reserva = typeof reservas.$inferSelect;

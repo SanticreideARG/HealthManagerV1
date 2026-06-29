@@ -253,6 +253,28 @@ export interface TareaHousekeeping {
   createdAt: string;
 }
 
+export interface Servicio {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  precio: string;
+  unidad: string;
+  categoria: string | null;
+  activo: boolean;
+}
+
+export interface Consumo {
+  id: number;
+  reservaId: number;
+  servicioId: number | null;
+  descripcion: string;
+  cantidad: string;
+  precioUnit: string;
+  subtotal: string;
+  fecha: string;
+  notas: string | null;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -375,6 +397,17 @@ export interface ApiClient {
     list: (params?: { estado?: string; habitacionId?: number; desde?: string; hasta?: string }) => Promise<TareaHousekeeping[]>;
     create: (data: import("@suites/shared").TareaHousekeepingCreate) => Promise<TareaHousekeeping>;
     update: (id: number, data: import("@suites/shared").TareaHousekeepingUpdate) => Promise<TareaHousekeeping>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  servicios: {
+    list: () => Promise<Servicio[]>;
+    create: (data: import("@suites/shared").ServicioCreate) => Promise<Servicio>;
+    update: (id: number, data: import("@suites/shared").ServicioUpdate) => Promise<Servicio>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  consumos: {
+    list: (reservaId: number) => Promise<Consumo[]>;
+    create: (data: import("@suites/shared").ConsumoCreate) => Promise<Consumo>;
     remove: (id: number) => Promise<{ ok: true }>;
   };
   reservas: {

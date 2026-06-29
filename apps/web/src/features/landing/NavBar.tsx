@@ -113,20 +113,12 @@ export function NavBar({ onOpenLogin }: { onOpenLogin: () => void }) {
               Salir
             </button>
           ) : (
-            <>
-              <button
-                onClick={onOpenLogin}
-                className={`hidden rounded-lg px-4 py-2 text-sm font-medium transition sm:block ${linkClass}`}
-              >
-                Iniciar sesión
-              </button>
-              <button
-                onClick={onOpenLogin}
-                className="rounded-lg bg-[#0058be] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2170e4] active:scale-[0.98]"
-              >
-                Login
-              </button>
-            </>
+            <button
+              onClick={onOpenLogin}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${linkClass}`}
+            >
+              Iniciar sesión
+            </button>
           )}
         </div>
       </div>

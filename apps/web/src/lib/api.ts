@@ -22,6 +22,9 @@ import type {
   MetodoPagoCreate,
   MetodoPagoUpdate,
   PagoRegistrar,
+  ServicioCreate,
+  ServicioUpdate,
+  ConsumoCreate,
 } from "@suites/shared";
 import type {
   ApiClient,
@@ -48,6 +51,8 @@ import type {
   Impuesto,
   MetodoPago,
   PagoRegistrado,
+  Servicio,
+  Consumo,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -78,6 +83,8 @@ export type {
   Impuesto,
   MetodoPago,
   PagoRegistrado,
+  Servicio,
+  Consumo,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -248,6 +255,23 @@ const realApi: ApiClient = {
       request<PagoRegistrado[]>(`/pagos?reservaId=${reservaId}`),
     registrar: (data: PagoRegistrar) =>
       request<PagoRegistrado>("/pagos", { method: "POST", body: JSON.stringify(data) }),
+  },
+  servicios: {
+    list: () => request<Servicio[]>("/servicios"),
+    create: (data: ServicioCreate) =>
+      request<Servicio>("/servicios", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: ServicioUpdate) =>
+      request<Servicio>(`/servicios/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/servicios/${id}`, { method: "DELETE" }),
+  },
+  consumos: {
+    list: (reservaId: number) =>
+      request<Consumo[]>(`/consumos?reservaId=${reservaId}`),
+    create: (data: ConsumoCreate) =>
+      request<Consumo>("/consumos", { method: "POST", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/consumos/${id}`, { method: "DELETE" }),
   },
   reportes: {
     resumen: (desde: string, hasta: string) =>

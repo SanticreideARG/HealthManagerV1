@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api.js";
 import type { ReservaListItem, MetodoPago, PagoRegistrado } from "../../lib/api.js";
 import { Modal } from "../habitaciones/NuevaHabitacion.js";
+import type { Servicio, Consumo } from "../../lib/types.js";
 
 export function AccionesReserva({
   reserva,
@@ -28,9 +29,10 @@ export function AccionesReserva({
   const generarComprobante = async () => {
     setGenerando(true);
     try {
-      const { armarDatos, descargarComprobante } = await import(
-        "../facturacion/Comprobante.js"
-      );
+      const [{ armarDatos, descargarComprobante }, consumos] = await Promise.all([
+        import("../facturacion/Comprobante.js"),
+        api.consumos.list(reserva.id),
+      ]);
       const cfg = configQ.data;
       const negocio = cfg
         ? {
@@ -52,6 +54,12 @@ export function AccionesReserva({
           checkin: reserva.checkin,
           checkout: reserva.checkout,
           total: Number(reserva.total),
+          extras: consumos.map((c) => ({
+            descripcion: c.descripcion,
+            cantidad: Number(c.cantidad),
+            precioUnit: Number(c.precioUnit),
+            subtotal: Number(c.subtotal),
+          })),
         }),
         negocio,
       );
@@ -218,6 +226,8 @@ export function AccionesReserva({
             {generando ? "Generando…" : "📄 Descargar comprobante (PDF)"}
           </button>
 
+          <ExtrasSection reservaId={reserva.id} />
+
           <PagosSection reservaId={reserva.id} totalReserva={Number(reserva.total)} />
 
           <div className="flex gap-2 pt-2">
@@ -249,6 +259,196 @@ export function AccionesReserva({
         </>
       )}
     </Modal>
+  );
+}
+
+// ── Sección de extras (servicios adicionales / consumos) ────────────────────
+
+function ExtrasSection({ reservaId }: { reservaId: number }) {
+  const qc = useQueryClient();
+  const consumosQ = useQuery({
+    queryKey: ["consumos", reservaId],
+    queryFn: () => api.consumos.list(reservaId),
+  });
+  const serviciosQ = useQuery({
+    queryKey: ["servicios"],
+    queryFn: api.servicios.list,
+  });
+
+  const [abierto, setAbierto] = useState(false);
+  const [servicioId, setServicioId] = useState<number | "">("");
+  const [descripcion, setDescripcion] = useState("");
+  const [cantidad, setCantidad] = useState("1");
+  const [precioUnit, setPrecioUnit] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const serviciosActivos = (serviciosQ.data ?? []).filter((s) => s.activo);
+
+  const aplicarServicio = (id: number | "") => {
+    setServicioId(id);
+    const s = serviciosActivos.find((x) => x.id === id);
+    if (s) {
+      setDescripcion(s.nombre);
+      setPrecioUnit(s.precio);
+    }
+  };
+
+  const fmt = (n: number) => `$${n.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`;
+
+  const refrescar = () => {
+    qc.invalidateQueries({ queryKey: ["consumos", reservaId] });
+    qc.invalidateQueries({ queryKey: ["reservas"] });
+  };
+
+  const agregar = useMutation({
+    mutationFn: () =>
+      api.consumos.create({
+        reservaId,
+        servicioId: servicioId === "" ? undefined : servicioId,
+        descripcion,
+        cantidad: Number(cantidad),
+        precioUnit: Number(precioUnit),
+      }),
+    onSuccess: () => {
+      refrescar();
+      setAbierto(false);
+      setServicioId("");
+      setDescripcion("");
+      setCantidad("1");
+      setPrecioUnit("");
+      setError(null);
+    },
+    onError: () => setError("No se pudo agregar el cargo."),
+  });
+
+  const quitar = useMutation({
+    mutationFn: (id: number) => api.consumos.remove(id),
+    onSuccess: refrescar,
+  });
+
+  const consumos = consumosQ.data ?? [];
+  const totalExtras = consumos.reduce((acc, c) => acc + Number(c.subtotal), 0);
+  const subtotal = (Number(cantidad) || 0) * (Number(precioUnit) || 0);
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          🧾 Extras{totalExtras > 0 ? ` · ${fmt(totalExtras)}` : ""}
+        </span>
+        {!abierto && (
+          <button
+            onClick={() => setAbierto(true)}
+            className="rounded-lg bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-600"
+          >
+            + Agregar cargo
+          </button>
+        )}
+      </div>
+
+      {consumos.length > 0 && (
+        <div className="border-t border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+          {consumos.map((c: Consumo) => (
+            <div key={c.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+              <div>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{c.descripcion}</span>
+                <div className="text-xs text-slate-400">
+                  {c.cantidad} × {fmt(Number(c.precioUnit))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  {fmt(Number(c.subtotal))}
+                </span>
+                <button
+                  onClick={() => quitar.mutate(c.id)}
+                  disabled={quitar.isPending}
+                  className="text-rose-500 hover:text-rose-600 disabled:opacity-50"
+                  aria-label="Quitar"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {abierto && (
+        <div className="border-t border-slate-100 dark:border-slate-700 p-4 space-y-3">
+          <label className="block text-sm">
+            <span className="text-slate-600 dark:text-slate-300">Del catálogo (opcional)</span>
+            <select
+              value={servicioId}
+              onChange={(e) => aplicarServicio(e.target.value === "" ? "" : Number(e.target.value))}
+              className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <option value="">Cargo personalizado…</option>
+              {serviciosActivos.map((s: Servicio) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} ({fmt(Number(s.precio))}/{s.unidad})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm">
+            <span className="text-slate-600 dark:text-slate-300">Descripción</span>
+            <input
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Desayuno, transfer, lavandería…"
+              className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Cantidad</span>
+              <input
+                type="number" min={0.01} step={0.01}
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Precio unitario ($)</span>
+              <input
+                type="number" min={0} step={0.01}
+                value={precioUnit}
+                onChange={(e) => setPrecioUnit(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+          </div>
+
+          {subtotal > 0 && (
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Subtotal: {fmt(subtotal)}
+            </p>
+          )}
+
+          {error && <p className="text-xs text-rose-600">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              disabled={!descripcion || !precioUnit || subtotal <= 0 || agregar.isPending}
+              onClick={() => { setError(null); agregar.mutate(); }}
+              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {agregar.isPending ? "Agregando…" : "Confirmar cargo"}
+            </button>
+            <button
+              onClick={() => { setAbierto(false); setError(null); }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

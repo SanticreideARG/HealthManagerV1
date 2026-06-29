@@ -38,6 +38,8 @@ export {
   landingFotos,
   landingLinks,
   tareasHousekeeping,
+  servicios,
+  consumos,
   authUser,
   authSession,
   authAccount,
@@ -57,6 +59,8 @@ export type {
   LandingFoto,
   LandingLink,
   TareaHousekeeping,
+  Servicio,
+  Consumo,
 } from "./schema.js";
 
 // Operadores de Drizzle (una sola instancia; ver nota en package del repo).
