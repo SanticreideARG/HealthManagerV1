@@ -132,6 +132,17 @@ export const config = pgTable("config", {
   logoUrl: text("logo_url"),
 });
 
+// ---------- Fotos de alojamiento (URLs en Vercel Blob) ----------
+export const habitacionFotos = pgTable("habitacion_fotos", {
+  id: serial("id").primaryKey(),
+  habitacionId: integer("habitacion_id")
+    .notNull()
+    .references(() => habitaciones.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  orden: integer("orden").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- Amenidades (catálogo de características de alojamientos) ----------
 export const tipoAmenidadEnum = pgEnum("tipo_amenidad", [
   "bool",
@@ -219,3 +230,4 @@ export type Pago = typeof pagos.$inferSelect;
 export type TarifaRegla = typeof tarifaReglas.$inferSelect;
 export type Amenidad = typeof amenidades.$inferSelect;
 export type HabitacionAmenidad = typeof habitacionAmenidades.$inferSelect;
+export type HabitacionFoto = typeof habitacionFotos.$inferSelect;

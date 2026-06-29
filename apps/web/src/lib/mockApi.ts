@@ -11,6 +11,7 @@ import type {
   PublicHabitacion,
   Amenidad,
   HabitacionAmenidad,
+  HabitacionFoto,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -135,6 +136,10 @@ let configMock: Config = {
   email: "reservas@mialojamiento.com",
   logoUrl: null,
 };
+
+// ---- Fotos de habitaciones (mock) ----
+let seqFoto = 0;
+const habitacionFotosMock: Record<number, HabitacionFoto[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 
 // ---- Usuarios (mock) ----
 const usuariosMock: Usuario[] = [
@@ -363,6 +368,41 @@ export const mockApi: ApiClient = {
       return delay(resolveAmenidades(habitacionId));
     },
   },
+  habitacionFotos: {
+    list: (habitacionId) => delay([...(habitacionFotosMock[habitacionId] ?? [])]),
+    upload: (habitacionId, file) => {
+      const arr = habitacionFotosMock[habitacionId] ?? [];
+      const foto: HabitacionFoto = {
+        id: ++seqFoto,
+        habitacionId,
+        url: URL.createObjectURL(file),
+        orden: arr.length,
+        createdAt: new Date().toISOString(),
+      };
+      arr.push(foto);
+      habitacionFotosMock[habitacionId] = arr;
+      return delay(foto);
+    },
+    remove: (habitacionId, fotoId) => {
+      const arr = habitacionFotosMock[habitacionId] ?? [];
+      const i = arr.findIndex((f) => f.id === fotoId);
+      if (i >= 0) arr.splice(i, 1);
+      arr.forEach((f, idx) => { f.orden = idx; });
+      return delay({ ok: true } as const);
+    },
+    reorder: (habitacionId, ids) => {
+      const arr = habitacionFotosMock[habitacionId] ?? [];
+      const sorted = ids
+        .map((id, idx) => {
+          const f = arr.find((x) => x.id === id);
+          if (f) f.orden = idx;
+          return f;
+        })
+        .filter(Boolean) as HabitacionFoto[];
+      habitacionFotosMock[habitacionId] = sorted;
+      return delay([...sorted]);
+    },
+  },
   tarifas: {
     list: () =>
       delay([...tarifaReglas].sort((a, b) => b.prioridad - a.prioridad)),
@@ -403,6 +443,11 @@ export const mockApi: ApiClient = {
     update: (data) => {
       configMock = { ...configMock, ...data };
       return delay(configMock);
+    },
+    uploadLogo: (file) => {
+      const url = URL.createObjectURL(file);
+      configMock = { ...configMock, logoUrl: url };
+      return delay({ url, config: configMock });
     },
   },
   usuarios: {

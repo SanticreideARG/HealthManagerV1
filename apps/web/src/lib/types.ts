@@ -58,6 +58,14 @@ export interface HabitacionAmenidad {
   valor: string | null;
 }
 
+export interface HabitacionFoto {
+  id: number;
+  habitacionId: number;
+  url: string;
+  orden: number;
+  createdAt: string;
+}
+
 export interface HistorialItem {
   id: number;
   habitacionId: number;
@@ -166,6 +174,17 @@ export interface ApiClient {
     ) => Promise<Habitacion>;
     remove: (id: number) => Promise<{ ok: true }>;
   };
+  habitacionFotos: {
+    list: (habitacionId: number) => Promise<HabitacionFoto[]>;
+    upload: (habitacionId: number, file: File) => Promise<HabitacionFoto>;
+    remove: (habitacionId: number, fotoId: number) => Promise<{ ok: true }>;
+    reorder: (habitacionId: number, ids: number[]) => Promise<HabitacionFoto[]>;
+  };
+  config: {
+    get: () => Promise<Config | null>;
+    update: (data: import("@suites/shared").ConfigUpdate) => Promise<Config>;
+    uploadLogo: (file: File) => Promise<{ url: string; config: Config }>;
+  };
   huespedes: {
     list: () => Promise<Huesped[]>;
     alojados: () => Promise<HuespedAlojado[]>;
@@ -194,10 +213,6 @@ export interface ApiClient {
   };
   reportes: {
     resumen: (desde: string, hasta: string) => Promise<ReporteResumen>;
-  };
-  config: {
-    get: () => Promise<Config | null>;
-    update: (data: import("@suites/shared").ConfigUpdate) => Promise<Config>;
   };
   usuarios: {
     list: () => Promise<Usuario[]>;

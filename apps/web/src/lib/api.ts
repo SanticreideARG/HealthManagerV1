@@ -28,6 +28,7 @@ import type {
   PublicHabitacion,
   Amenidad,
   HabitacionAmenidad,
+  HabitacionFoto,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -48,6 +49,7 @@ export type {
   PublicHabitacion,
   Amenidad,
   HabitacionAmenidad,
+  HabitacionFoto,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -56,8 +58,23 @@ const USE_MOCK = import.meta.env.VITE_MOCK === "1";
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
-    credentials: "include", // envía la cookie de sesión (Better Auth)
+    credentials: "include",
     ...init,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body.message ?? res.statusText, body.error);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function upload<T>(path: string, file: File, method = "POST"): Promise<T> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    body: form,
+    credentials: "include",
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -84,6 +101,19 @@ const realApi: ApiClient = {
       }),
     remove: (id: number) =>
       request<{ ok: true }>(`/habitaciones/${id}`, { method: "DELETE" }),
+  },
+  habitacionFotos: {
+    list: (habitacionId: number) =>
+      request<HabitacionFoto[]>(`/habitaciones/${habitacionId}/fotos`),
+    upload: (habitacionId: number, file: File) =>
+      upload<HabitacionFoto>(`/habitaciones/${habitacionId}/fotos`, file),
+    remove: (habitacionId: number, fotoId: number) =>
+      request<{ ok: true }>(`/habitaciones/${habitacionId}/fotos/${fotoId}`, { method: "DELETE" }),
+    reorder: (habitacionId: number, ids: number[]) =>
+      request<HabitacionFoto[]>(`/habitaciones/${habitacionId}/fotos/orden`, {
+        method: "PATCH",
+        body: JSON.stringify({ ids }),
+      }),
   },
   huespedes: {
     list: () => request<Huesped[]>("/huespedes"),
@@ -134,6 +164,8 @@ const realApi: ApiClient = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    uploadLogo: (file: File) =>
+      upload<{ url: string; config: Config }>("/config/logo", file, "PUT"),
   },
   usuarios: {
     list: () => request<Usuario[]>("/usuarios"),

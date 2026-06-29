@@ -4,6 +4,7 @@ import { api, ApiError } from "../../lib/api.js";
 import type { Habitacion } from "../../lib/api.js";
 import { Modal } from "./NuevaHabitacion.js";
 import { AmenidadesHabitacion } from "./AmenidadesHabitacion.js";
+import { FotosHabitacion } from "./FotosHabitacion.js";
 
 export function EditarHabitacion({
   habitacion,
@@ -108,6 +109,13 @@ export function EditarHabitacion({
           Características
         </p>
         <AmenidadesHabitacion habitacionId={habitacion.id} />
+      </div>
+
+      <div className="border-t border-slate-100 pt-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Fotos
+        </p>
+        <FotosHabitacion habitacionId={habitacion.id} />
       </div>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
