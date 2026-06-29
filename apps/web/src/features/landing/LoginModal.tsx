@@ -58,7 +58,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
 
         {/* Header */}
         <div className="mb-6 text-center">
-          <img src={logo} alt="" className="mx-auto mb-4 h-14 w-14 rounded-2xl" />
+          <img src={logo} alt="" className="mx-auto mb-4 rounded-2xl" style={{ width: 275, height: 275 }} />
           <h2 className="text-xl font-bold text-slate-800 dark:text-white">
             Iniciar sesión
           </h2>
