@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { google } from "better-auth/social-providers";
 import {
   db,
   authUser,
@@ -31,6 +32,12 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword: { enabled: true },
+  socialProviders: {
+    google: google({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
+  },
   user: {
     additionalFields: {
       role: {
