@@ -50,7 +50,7 @@ export function NavBar({ onOpenLogin }: { onOpenLogin: () => void }) {
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className="flex items-center gap-3"
         >
-          <img src={logo} alt="" className="h-9 w-9 rounded-xl" />
+          <img src={logo} alt="" className="h-16 w-16 rounded-xl" />
           <span className={`text-lg font-bold transition-colors ${logoTextClass}`}>
             Suites Manager
           </span>
