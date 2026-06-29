@@ -17,6 +17,9 @@ import type {
   LandingConfig,
   LandingFoto,
   LandingLink,
+  Impuesto,
+  MetodoPago,
+  PagoRegistrado,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -161,6 +164,24 @@ const landingLinksMock: LandingLink[] = [
   { id: ++seqLandingLink, label: "Alojamientos", url: "#alojamientos", orden: 1, activa: true },
   { id: ++seqLandingLink, label: "Contacto", url: "#contacto", orden: 2, activa: true },
 ];
+
+// ---- Facturación (mock) ----
+let seqImpuesto = 0;
+const impuestosMock: Impuesto[] = [
+  { id: ++seqImpuesto, nombre: "IVA", tipo: "porcentaje", valor: "21.0000", aplicaA: "todo", activo: true, orden: 0 },
+  { id: ++seqImpuesto, nombre: "Tasa municipal", tipo: "porcentaje", valor: "2.5000", aplicaA: "todo", activo: true, orden: 1 },
+];
+
+let seqMetodoPago = 0;
+const metodosPagoMock: MetodoPago[] = [
+  { id: ++seqMetodoPago, tipo: "efectivo", nombre: "Efectivo", banco: null, cuotas: 1, recargoPct: "0.00", proveedor: null, activo: true },
+  { id: ++seqMetodoPago, tipo: "transferencia", nombre: "Transferencia bancaria", banco: "Banco Nación", cuotas: 1, recargoPct: "0.00", proveedor: null, activo: true },
+  { id: ++seqMetodoPago, tipo: "tarjeta", nombre: "Tarjeta de crédito (Visa)", banco: "Galicia", cuotas: 3, recargoPct: "10.00", proveedor: null, activo: true },
+  { id: ++seqMetodoPago, tipo: "qr", nombre: "Mercado Pago QR", banco: null, cuotas: 1, recargoPct: "3.50", proveedor: "Mercado Pago", activo: true },
+];
+
+let seqPago = 0;
+const pagosMock: PagoRegistrado[] = [];
 
 // ---- Fotos de habitaciones (mock) ----
 let seqFoto = 0;
@@ -540,6 +561,98 @@ export const mockApi: ApiClient = {
       ids.forEach((id, idx) => { const l = landingLinksMock.find((x) => x.id === id); if (l) l.orden = idx; });
       landingLinksMock.sort((a, b) => a.orden - b.orden);
       return delay([...landingLinksMock]);
+    },
+  },
+  impuestos: {
+    list: () => delay([...impuestosMock].sort((a, b) => a.orden - b.orden || a.id - b.id)),
+    create: (data) => {
+      const imp: Impuesto = {
+        id: ++seqImpuesto,
+        nombre: data.nombre,
+        tipo: data.tipo,
+        valor: String(data.valor),
+        aplicaA: data.aplicaA ?? "todo",
+        activo: data.activo ?? true,
+        orden: data.orden ?? 0,
+      };
+      impuestosMock.push(imp);
+      return delay(imp);
+    },
+    update: (id, data) => {
+      const imp = impuestosMock.find((x) => x.id === id);
+      if (!imp) return Promise.reject(new ApiError(404, "No encontrado"));
+      if (data.nombre !== undefined) imp.nombre = data.nombre;
+      if (data.tipo !== undefined) imp.tipo = data.tipo;
+      if (data.valor !== undefined) imp.valor = String(data.valor);
+      if (data.aplicaA !== undefined) imp.aplicaA = data.aplicaA ?? "todo";
+      if (data.activo !== undefined) imp.activo = data.activo;
+      if (data.orden !== undefined) imp.orden = data.orden ?? 0;
+      return delay({ ...imp });
+    },
+    remove: (id) => {
+      const i = impuestosMock.findIndex((x) => x.id === id);
+      if (i >= 0) impuestosMock.splice(i, 1);
+      return delay({ ok: true } as const);
+    },
+  },
+  metodosPago: {
+    list: () => delay([...metodosPagoMock]),
+    create: (data) => {
+      const m: MetodoPago = {
+        id: ++seqMetodoPago,
+        tipo: data.tipo,
+        nombre: data.nombre,
+        banco: data.banco ?? null,
+        cuotas: data.cuotas ?? 1,
+        recargoPct: String(data.recargoPct ?? 0),
+        proveedor: data.proveedor ?? null,
+        activo: data.activo ?? true,
+      };
+      metodosPagoMock.push(m);
+      return delay(m);
+    },
+    update: (id, data) => {
+      const m = metodosPagoMock.find((x) => x.id === id);
+      if (!m) return Promise.reject(new ApiError(404, "No encontrado"));
+      if (data.tipo !== undefined) m.tipo = data.tipo;
+      if (data.nombre !== undefined) m.nombre = data.nombre;
+      if (data.banco !== undefined) m.banco = data.banco ?? null;
+      if (data.cuotas !== undefined) m.cuotas = data.cuotas ?? 1;
+      if (data.recargoPct !== undefined) m.recargoPct = String(data.recargoPct ?? 0);
+      if (data.proveedor !== undefined) m.proveedor = data.proveedor ?? null;
+      if (data.activo !== undefined) m.activo = data.activo;
+      return delay({ ...m });
+    },
+    remove: (id) => {
+      const i = metodosPagoMock.findIndex((x) => x.id === id);
+      if (i >= 0) metodosPagoMock.splice(i, 1);
+      return delay({ ok: true } as const);
+    },
+  },
+  pagos: {
+    list: (reservaId) =>
+      delay([...pagosMock].filter((p) => p.reservaId === reservaId).sort((a, b) => b.fecha.localeCompare(a.fecha))),
+    registrar: (data) => {
+      const metodo = metodosPagoMock.find((m) => m.id === data.metodoId);
+      if (!metodo) return Promise.reject(new ApiError(404, "Método no encontrado"));
+      const montoBase = data.montoBase;
+      const montoExtras = data.montoExtras ?? 0;
+      const recargo = Number(metodo.recargoPct);
+      const monto = Math.round((montoBase + montoExtras) * (1 + recargo / 100) * 100) / 100;
+      const pago: PagoRegistrado = {
+        id: ++seqPago,
+        reservaId: data.reservaId,
+        metodoId: data.metodoId,
+        metodoPago: metodo.nombre,
+        monto: String(monto),
+        montoBase: String(montoBase),
+        montoExtras: String(montoExtras),
+        referencia: data.referencia ?? null,
+        notas: data.notas ?? null,
+        fecha: new Date().toISOString(),
+      };
+      pagosMock.push(pago);
+      return delay(pago);
     },
   },
   reportes: {

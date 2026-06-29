@@ -15,6 +15,11 @@ import type {
   LandingConfigUpdate,
   LandingLinkCreate,
   LandingLinkUpdate,
+  ImpuestoCreate,
+  ImpuestoUpdate,
+  MetodoPagoCreate,
+  MetodoPagoUpdate,
+  PagoRegistrar,
 } from "@suites/shared";
 import type {
   ApiClient,
@@ -37,6 +42,9 @@ import type {
   LandingConfig,
   LandingFoto,
   LandingLink,
+  Impuesto,
+  MetodoPago,
+  PagoRegistrado,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -63,6 +71,9 @@ export type {
   LandingConfig,
   LandingFoto,
   LandingLink,
+  Impuesto,
+  MetodoPago,
+  PagoRegistrado,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -189,6 +200,30 @@ const realApi: ApiClient = {
       request<{ ok: true }>(`/landing-manager/links/${id}`, { method: "DELETE" }),
     reorderLinks: (ids: number[]) =>
       request<LandingLink[]>("/landing-manager/links/orden", { method: "PATCH", body: JSON.stringify({ ids }) }),
+  },
+  impuestos: {
+    list: () => request<Impuesto[]>("/impuestos"),
+    create: (data: ImpuestoCreate) =>
+      request<Impuesto>("/impuestos", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: ImpuestoUpdate) =>
+      request<Impuesto>(`/impuestos/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/impuestos/${id}`, { method: "DELETE" }),
+  },
+  metodosPago: {
+    list: () => request<MetodoPago[]>("/metodos-pago"),
+    create: (data: MetodoPagoCreate) =>
+      request<MetodoPago>("/metodos-pago", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: MetodoPagoUpdate) =>
+      request<MetodoPago>(`/metodos-pago/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/metodos-pago/${id}`, { method: "DELETE" }),
+  },
+  pagos: {
+    list: (reservaId: number) =>
+      request<PagoRegistrado[]>(`/pagos?reservaId=${reservaId}`),
+    registrar: (data: PagoRegistrar) =>
+      request<PagoRegistrado>("/pagos", { method: "POST", body: JSON.stringify(data) }),
   },
   reportes: {
     resumen: (desde: string, hasta: string) =>

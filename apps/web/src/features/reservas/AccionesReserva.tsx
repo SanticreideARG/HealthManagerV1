@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api.js";
-import type { ReservaListItem } from "../../lib/api.js";
+import type { ReservaListItem, MetodoPago, PagoRegistrado } from "../../lib/api.js";
 import { Modal } from "../habitaciones/NuevaHabitacion.js";
 
 export function AccionesReserva({
@@ -218,6 +218,8 @@ export function AccionesReserva({
             {generando ? "Generando…" : "📄 Descargar comprobante (PDF)"}
           </button>
 
+          <PagosSection reservaId={reserva.id} />
+
           <div className="flex gap-2 pt-2">
             {reserva.estado === "reservada" && (
               <button
@@ -247,5 +249,214 @@ export function AccionesReserva({
         </>
       )}
     </Modal>
+  );
+}
+
+// ── Sección de pagos ─────────────────────────────────────────────────────────
+
+const TIPO_ICONO: Record<string, string> = {
+  efectivo: "💵", transferencia: "🏦", tarjeta: "💳", qr: "📱", billetera: "👜",
+};
+
+function PagosSection({ reservaId }: { reservaId: number }) {
+  const qc = useQueryClient();
+  const pagosQ = useQuery({
+    queryKey: ["pagos", reservaId],
+    queryFn: () => api.pagos.list(reservaId),
+  });
+  const metodosQ = useQuery({
+    queryKey: ["metodos-pago"],
+    queryFn: api.metodosPago.list,
+  });
+
+  const [abierto, setAbierto] = useState(false);
+  const [metodoId, setMetodoId] = useState<number | "">("");
+  const [montoBase, setMontoBase] = useState("");
+  const [montoExtras, setMontoExtras] = useState("0");
+  const [referencia, setReferencia] = useState("");
+  const [errPago, setErrPago] = useState<string | null>(null);
+
+  const metodosActivos = (metodosQ.data ?? []).filter((m) => m.activo);
+  const metodoSel = metodosActivos.find((m) => m.id === Number(metodoId)) ?? null;
+
+  const base = Number(montoBase) || 0;
+  const extras = Number(montoExtras) || 0;
+  const recargo = metodoSel ? Number(metodoSel.recargoPct) : 0;
+  const total = Math.round((base + extras) * (1 + recargo / 100) * 100) / 100;
+
+  const registrar = useMutation({
+    mutationFn: () => {
+      if (!metodoId || !montoBase) throw new Error();
+      return api.pagos.registrar({
+        reservaId,
+        metodoId: Number(metodoId),
+        montoBase: base,
+        montoExtras: extras,
+        referencia: referencia || undefined,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pagos", reservaId] });
+      setAbierto(false);
+      setMetodoId("");
+      setMontoBase("");
+      setMontoExtras("0");
+      setReferencia("");
+      setErrPago(null);
+    },
+    onError: () => setErrPago("No se pudo registrar el pago."),
+  });
+
+  const pagos = pagosQ.data ?? [];
+  const totalPagado = pagos.reduce((acc, p) => acc + Number(p.monto), 0);
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          💰 Pagos
+          {pagos.length > 0 && (
+            <span className="ml-2 text-slate-400 font-normal">
+              cobrado: ${totalPagado.toLocaleString("es-AR")}
+            </span>
+          )}
+        </span>
+        {!abierto && (
+          <button
+            onClick={() => setAbierto(true)}
+            className="rounded-lg bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-600"
+          >
+            + Registrar pago
+          </button>
+        )}
+      </div>
+
+      {/* Lista de pagos existentes */}
+      {pagos.length > 0 && (
+        <div className="border-t border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+          {pagos.map((p) => (
+            <PagoItem key={p.id} pago={p} metodos={metodosQ.data ?? []} />
+          ))}
+        </div>
+      )}
+
+      {/* Formulario inline */}
+      {abierto && (
+        <div className="border-t border-slate-100 dark:border-slate-700 p-4 space-y-3">
+          <label className="block text-sm">
+            <span className="text-slate-600 dark:text-slate-300">Método de pago</span>
+            <select
+              value={metodoId}
+              onChange={(e) => setMetodoId(e.target.value === "" ? "" : Number(e.target.value))}
+              className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <option value="">Seleccioná un método…</option>
+              {metodosActivos.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {TIPO_ICONO[m.tipo] ?? "💰"} {m.nombre}
+                  {Number(m.recargoPct) > 0 ? ` (+${Number(m.recargoPct).toFixed(2)}%)` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Monto base ($)</span>
+              <input
+                type="number" min={0} step={0.01}
+                value={montoBase}
+                onChange={(e) => setMontoBase(e.target.value)}
+                placeholder="0"
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Extras ($)</span>
+              <input
+                type="number" min={0} step={0.01}
+                value={montoExtras}
+                onChange={(e) => setMontoExtras(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+          </div>
+
+          <label className="block text-sm">
+            <span className="text-slate-600 dark:text-slate-300">Referencia (opcional)</span>
+            <input
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="N.º transferencia, N.º cupon, etc."
+              className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            />
+          </label>
+
+          {/* Resumen */}
+          {base > 0 && (
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm space-y-1">
+              <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                <span>Subtotal</span>
+                <span>${(base + extras).toLocaleString("es-AR")}</span>
+              </div>
+              {recargo > 0 && (
+                <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                  <span>Recargo {recargo.toFixed(2)}%</span>
+                  <span>+${((base + extras) * recargo / 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold text-slate-800 dark:text-slate-100 border-t border-slate-200 dark:border-slate-700 pt-1">
+                <span>Total a cobrar</span>
+                <span>${total.toLocaleString("es-AR")}</span>
+              </div>
+            </div>
+          )}
+
+          {errPago && <p className="text-xs text-rose-600">{errPago}</p>}
+
+          <div className="flex gap-2">
+            <button
+              disabled={!metodoId || !montoBase || base <= 0 || registrar.isPending}
+              onClick={() => { setErrPago(null); registrar.mutate(); }}
+              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {registrar.isPending ? "Registrando…" : "Confirmar pago"}
+            </button>
+            <button
+              onClick={() => { setAbierto(false); setErrPago(null); }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PagoItem({ pago, metodos }: { pago: PagoRegistrado; metodos: MetodoPago[] }) {
+  const metodo = metodos.find((m) => m.id === pago.metodoId);
+  const icono = TIPO_ICONO[metodo?.tipo ?? ""] ?? "💰";
+  const fecha = new Date(pago.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+      <div className="flex items-center gap-2">
+        <span>{icono}</span>
+        <div>
+          <span className="font-medium text-slate-700 dark:text-slate-200">
+            {pago.metodoPago ?? "—"}
+          </span>
+          {pago.referencia && (
+            <span className="ml-2 text-xs text-slate-400">#{pago.referencia}</span>
+          )}
+          <div className="text-xs text-slate-400">{fecha}</div>
+        </div>
+      </div>
+      <span className="font-semibold text-slate-800 dark:text-slate-100">
+        ${Number(pago.monto).toLocaleString("es-AR")}
+      </span>
+    </div>
   );
 }

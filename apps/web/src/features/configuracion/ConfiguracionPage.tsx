@@ -4,14 +4,16 @@ import { api } from "../../lib/api.js";
 import { HabitacionesAdmin } from "./HabitacionesAdmin.js";
 import { AmenidadesAdmin } from "./AmenidadesAdmin.js";
 import { UsuariosAdmin } from "./UsuariosAdmin.js";
+import { FacturacionAdmin } from "./FacturacionAdmin.js";
 
-type Tab = "datos" | "logo" | "alojamientos" | "caracteristicas" | "usuarios";
+type Tab = "datos" | "logo" | "alojamientos" | "caracteristicas" | "facturacion" | "usuarios";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "datos", label: "Datos" },
   { id: "logo", label: "Logo" },
   { id: "alojamientos", label: "Alojamientos" },
   { id: "caracteristicas", label: "Características" },
+  { id: "facturacion", label: "Facturación" },
   { id: "usuarios", label: "Usuarios" },
 ];
 
@@ -56,6 +58,7 @@ export function ConfiguracionPage() {
       {tab === "logo" && <LogoTab />}
       {tab === "alojamientos" && <HabitacionesAdmin />}
       {tab === "caracteristicas" && <AmenidadesAdmin />}
+      {tab === "facturacion" && <FacturacionAdmin />}
       {tab === "usuarios" && <UsuariosAdmin />}
     </div>
   );

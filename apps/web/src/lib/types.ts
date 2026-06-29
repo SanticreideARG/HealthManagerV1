@@ -190,6 +190,40 @@ export interface ReporteForecast {
   }[];
 }
 
+export interface Impuesto {
+  id: number;
+  nombre: string;
+  tipo: "porcentaje" | "monto_fijo";
+  valor: string;
+  aplicaA: "todo" | "habitacion" | "cargo";
+  activo: boolean;
+  orden: number;
+}
+
+export interface MetodoPago {
+  id: number;
+  tipo: "efectivo" | "transferencia" | "tarjeta" | "qr" | "billetera";
+  nombre: string;
+  banco: string | null;
+  cuotas: number;
+  recargoPct: string;
+  proveedor: string | null;
+  activo: boolean;
+}
+
+export interface PagoRegistrado {
+  id: number;
+  reservaId: number;
+  metodoId: number | null;
+  metodoPago: string | null;
+  monto: string;
+  montoBase: string | null;
+  montoExtras: string | null;
+  referencia: string | null;
+  notas: string | null;
+  fecha: string;
+}
+
 export interface PublicHabitacion {
   id: number;
   nombre: string;
@@ -277,6 +311,22 @@ export interface ApiClient {
     updateLink: (id: number, data: import("@suites/shared").LandingLinkUpdate) => Promise<LandingLink>;
     removeLink: (id: number) => Promise<{ ok: true }>;
     reorderLinks: (ids: number[]) => Promise<LandingLink[]>;
+  };
+  impuestos: {
+    list: () => Promise<Impuesto[]>;
+    create: (data: import("@suites/shared").ImpuestoCreate) => Promise<Impuesto>;
+    update: (id: number, data: import("@suites/shared").ImpuestoUpdate) => Promise<Impuesto>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  metodosPago: {
+    list: () => Promise<MetodoPago[]>;
+    create: (data: import("@suites/shared").MetodoPagoCreate) => Promise<MetodoPago>;
+    update: (id: number, data: import("@suites/shared").MetodoPagoUpdate) => Promise<MetodoPago>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  pagos: {
+    list: (reservaId: number) => Promise<PagoRegistrado[]>;
+    registrar: (data: import("@suites/shared").PagoRegistrar) => Promise<PagoRegistrado>;
   };
   reportes: {
     resumen: (desde: string, hasta: string) => Promise<ReporteResumen>;

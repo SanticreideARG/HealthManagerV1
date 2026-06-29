@@ -93,13 +93,41 @@ export const reservas = pgTable(
   (t) => [index("idx_reservas_habitacion").on(t.habitacionId)],
 );
 
+// ---------- Módulo de facturación ----------
+
+export const impuestos = pgTable("impuestos", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 120 }).notNull(),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // 'porcentaje' | 'monto_fijo'
+  valor: numeric("valor", { precision: 8, scale: 4 }).notNull(),
+  aplicaA: varchar("aplica_a", { length: 30 }).notNull().default("todo"),
+  activo: boolean("activo").notNull().default(true),
+  orden: integer("orden").notNull().default(0),
+});
+
+export const metodosPago = pgTable("metodos_pago", {
+  id: serial("id").primaryKey(),
+  tipo: varchar("tipo", { length: 30 }).notNull(),
+  nombre: varchar("nombre", { length: 120 }).notNull(),
+  banco: varchar("banco", { length: 80 }),
+  cuotas: integer("cuotas").notNull().default(1),
+  recargoPct: numeric("recargo_pct", { precision: 5, scale: 2 }).notNull().default("0"),
+  proveedor: varchar("proveedor", { length: 80 }),
+  activo: boolean("activo").notNull().default(true),
+});
+
 export const pagos = pgTable("pagos", {
   id: serial("id").primaryKey(),
   reservaId: integer("reserva_id")
     .notNull()
     .references(() => reservas.id),
-  metodo: metodoPagoEnum("metodo").notNull(),
+  metodo: metodoPagoEnum("metodo"), // nullable: legacy field; nuevos pagos usan metodoId
+  metodoId: integer("metodo_id").references(() => metodosPago.id),
   monto: numeric("monto", { precision: 12, scale: 2 }).notNull(),
+  montoBase: numeric("monto_base", { precision: 12, scale: 2 }),
+  montoExtras: numeric("monto_extras", { precision: 12, scale: 2 }).notNull().default("0"),
+  referencia: varchar("referencia", { length: 200 }),
+  notas: text("notas"),
   fecha: timestamp("fecha", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -248,6 +276,8 @@ export const authVerification = pgTable("auth_verification", {
 export type Habitacion = typeof habitaciones.$inferSelect;
 export type Huesped = typeof huespedes.$inferSelect;
 export type Reserva = typeof reservas.$inferSelect;
+export type Impuesto = typeof impuestos.$inferSelect;
+export type MetodoPago = typeof metodosPago.$inferSelect;
 export type Pago = typeof pagos.$inferSelect;
 export type TarifaRegla = typeof tarifaReglas.$inferSelect;
 export type Amenidad = typeof amenidades.$inferSelect;

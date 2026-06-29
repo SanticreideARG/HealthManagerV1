@@ -205,3 +205,54 @@ export const pagoCreate = z.object({
   monto: z.number().positive(),
 });
 export type PagoCreate = z.infer<typeof pagoCreate>;
+
+// ---------- Módulo de facturación ----------
+
+export const tipoImpuesto = z.enum(["porcentaje", "monto_fijo"]);
+export type TipoImpuesto = z.infer<typeof tipoImpuesto>;
+
+export const impuestoCreate = z.object({
+  nombre: z.string().min(1).max(120),
+  tipo: tipoImpuesto,
+  valor: z.number().positive(),
+  aplicaA: z.enum(["todo", "habitacion", "cargo"]).default("todo"),
+  activo: z.boolean().default(true),
+  orden: z.number().int().default(0),
+});
+export type ImpuestoCreate = z.infer<typeof impuestoCreate>;
+
+export const impuestoUpdate = impuestoCreate.partial();
+export type ImpuestoUpdate = z.infer<typeof impuestoUpdate>;
+
+export const tipoMetodoPago = z.enum([
+  "efectivo",
+  "transferencia",
+  "tarjeta",
+  "qr",
+  "billetera",
+]);
+export type TipoMetodoPago = z.infer<typeof tipoMetodoPago>;
+
+export const metodoPagoCreate = z.object({
+  tipo: tipoMetodoPago,
+  nombre: z.string().min(1).max(120),
+  banco: z.string().max(80).nullable().optional(),
+  cuotas: z.number().int().min(1).default(1),
+  recargoPct: z.number().min(0).max(100).default(0),
+  proveedor: z.string().max(80).nullable().optional(),
+  activo: z.boolean().default(true),
+});
+export type MetodoPagoCreate = z.infer<typeof metodoPagoCreate>;
+
+export const metodoPagoUpdate = metodoPagoCreate.partial();
+export type MetodoPagoUpdate = z.infer<typeof metodoPagoUpdate>;
+
+export const pagoRegistrar = z.object({
+  reservaId: z.number().int().positive(),
+  metodoId: z.number().int().positive(),
+  montoBase: z.number().positive(),
+  montoExtras: z.number().min(0).default(0),
+  referencia: z.string().max(200).optional(),
+  notas: z.string().max(1000).optional(),
+});
+export type PagoRegistrar = z.infer<typeof pagoRegistrar>;

@@ -27,6 +27,8 @@ export {
   habitaciones,
   huespedes,
   reservas,
+  impuestos,
+  metodosPago,
   pagos,
   tarifaReglas,
   config,
@@ -44,6 +46,8 @@ export type {
   Habitacion,
   Huesped,
   Reserva,
+  Impuesto,
+  MetodoPago,
   Pago,
   TarifaRegla,
   Amenidad,
@@ -54,7 +58,7 @@ export type {
 } from "./schema.js";
 
 // Operadores de Drizzle (una sola instancia; ver nota en package del repo).
-export { and, desc, eq, gte, lt, ne } from "drizzle-orm";
+export { and, asc, desc, eq, gte, lt, ne } from "drizzle-orm";
 
 /** Código que lanza Postgres cuando se viola un EXCLUDE constraint. */
 export const PG_EXCLUSION_VIOLATION = "23P01";
