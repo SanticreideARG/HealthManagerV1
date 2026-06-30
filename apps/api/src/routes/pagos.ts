@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { desc, db, eq, metodosPago, pagos } from "@suites/db";
 import { pagoRegistrar } from "@suites/shared";
 import { staff } from "../middleware/auth.js";
+import { logAudit } from "../lib/audit.js";
 
 export const pagosRoutes = new Hono();
 pagosRoutes.use("*", staff);
@@ -67,5 +68,27 @@ pagosRoutes.post("/", zValidator("json", pagoRegistrar), async (c) => {
     })
     .returning();
 
+  await logAudit(c, {
+    accion: "crear",
+    entidad: "pagos",
+    entidadId: row.id,
+    entidadLabel: `Pago #${row.id} — Reserva #${data.reservaId} ($${monto})`,
+    diff: { reservaId: { antes: null, despues: data.reservaId }, monto: { antes: null, despues: monto }, metodo: { antes: null, despues: metodo.nombre } },
+  });
   return c.json({ ...row, metodoPago: metodo.nombre }, 201);
+});
+
+pagosRoutes.delete("/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  const [antes] = await db.select().from(pagos).where(eq(pagos.id, id));
+  if (!antes) return c.json({ error: "No encontrado" }, 404);
+  await db.delete(pagos).where(eq(pagos.id, id));
+  await logAudit(c, {
+    accion: "eliminar",
+    entidad: "pagos",
+    entidadId: id,
+    entidadLabel: `Pago #${id} — Reserva #${antes.reservaId} ($${antes.monto})`,
+    diff: { monto: { antes: antes.monto, despues: null } },
+  });
+  return c.json({ ok: true });
 });

@@ -17,6 +17,7 @@ import {
 import { reservaCreate, reservaUpdate, bloqueoCreate } from "@suites/shared";
 import { calcularTotal } from "../calcularTarifa.js";
 import { staff } from "../middleware/auth.js";
+import { logAudit, computeDiff, diffEliminar } from "../lib/audit.js";
 
 export const reservasRoutes = new Hono();
 reservasRoutes.use("*", staff);
@@ -104,6 +105,14 @@ reservasRoutes.post("/", zValidator("json", reservaCreate), async (c) => {
         RETURNING *;
       `) as unknown[];
     }
+    const created = rows[0] as { id: number; checkin: string; checkout: string; huespedId?: number | null };
+    await logAudit(c, {
+      accion: "crear",
+      entidad: "reservas",
+      entidadId: created.id,
+      entidadLabel: `Reserva #${created.id} (${data.checkin} → ${data.checkout})`,
+      diff: { checkin: { antes: null, despues: data.checkin }, checkout: { antes: null, despues: data.checkout }, habitacionId: { antes: null, despues: data.habitacionId } },
+    });
     return c.json(rows[0], 201);
   } catch (err) {
     if (esViolacionOverbooking(err)) {
@@ -137,6 +146,13 @@ reservasRoutes.post(
           notas: data.motivo ?? null,
         })
         .returning();
+      await logAudit(c, {
+        accion: "crear",
+        entidad: "bloqueos",
+        entidadId: row.id,
+        entidadLabel: `Bloqueo #${row.id} (${data.checkin} → ${data.checkout})`,
+        diff: { checkin: { antes: null, despues: data.checkin }, checkout: { antes: null, despues: data.checkout } },
+      });
       return c.json(row, 201);
     } catch (err) {
       if (esViolacionOverbooking(err)) {
@@ -176,26 +192,15 @@ reservasRoutes.patch("/:id", zValidator("json", reservaUpdate), async (c) => {
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
 
-  // Si cambian las fechas, recalculamos el total con la tarifa de la habitación.
+  const [antes] = await db.select().from(reservas).where(eq(reservas.id, id));
+  if (!antes) return c.json({ error: "No encontrada" }, 404);
+
   let total: string | undefined;
   if (data.checkin || data.checkout) {
-    const [actual] = await db
-      .select()
-      .from(reservas)
-      .where(eq(reservas.id, id));
-    if (!actual) return c.json({ error: "No encontrada" }, 404);
-
-    const checkin = data.checkin ?? actual.checkin;
-    const checkout = data.checkout ?? actual.checkout;
-    const [hab] = await db
-      .select()
-      .from(habitaciones)
-      .where(eq(habitaciones.id, actual.habitacionId));
-    const calc = await calcularTotal(
-      Number(hab?.tarifaBase ?? 0),
-      checkin,
-      checkout,
-    );
+    const checkin = data.checkin ?? antes.checkin;
+    const checkout = data.checkout ?? antes.checkout;
+    const [hab] = await db.select().from(habitaciones).where(eq(habitaciones.id, antes.habitacionId));
+    const calc = await calcularTotal(Number(hab?.tarifaBase ?? 0), checkin, checkout);
     total = String(calc.total);
   }
 
@@ -206,13 +211,17 @@ reservasRoutes.patch("/:id", zValidator("json", reservaUpdate), async (c) => {
       .where(eq(reservas.id, id))
       .returning();
     if (!row) return c.json({ error: "No encontrada" }, 404);
+    await logAudit(c, {
+      accion: "editar",
+      entidad: "reservas",
+      entidadId: id,
+      entidadLabel: `Reserva #${id} (${row.checkin} → ${row.checkout})`,
+      diff: computeDiff(antes as any, row as any, ["estado", "checkin", "checkout", "notas", "total"]),
+    });
     return c.json(row);
   } catch (err) {
     if (esViolacionOverbooking(err)) {
-      return c.json(
-        { error: "overbooking", message: "Las nuevas fechas se solapan." },
-        409,
-      );
+      return c.json({ error: "overbooking", message: "Las nuevas fechas se solapan." }, 409);
     }
     throw err;
   }
@@ -233,6 +242,13 @@ reservasRoutes.post("/:id/checkin", async (c) => {
     .where(eq(reservas.id, id))
     .returning();
   if (!row) return c.json({ error: "No encontrada" }, 404);
+  await logAudit(c, {
+    accion: "editar",
+    entidad: "reservas",
+    entidadId: id,
+    entidadLabel: `Reserva #${id} — Check-in`,
+    diff: { estado: { antes: "reservada", despues: "ocupada" } },
+  });
   return c.json(row);
 });
 
@@ -247,7 +263,6 @@ reservasRoutes.post("/:id/checkout", async (c) => {
     .returning();
   if (!row) return c.json({ error: "No encontrada" }, 404);
 
-  // Auto-crear tarea de limpieza para el día de checkout
   await db.insert(tareasHousekeeping).values({
     habitacionId: row.habitacionId,
     reservaId: id,
@@ -257,12 +272,20 @@ reservasRoutes.post("/:id/checkout", async (c) => {
     descripcion: "Limpieza post check-out",
   } as any);
 
+  await logAudit(c, {
+    accion: "editar",
+    entidad: "reservas",
+    entidadId: id,
+    entidadLabel: `Reserva #${id} — Check-out`,
+    diff: { estado: { antes: "ocupada", despues: "checkout" } },
+  });
   return c.json(row);
 });
 
 // Cancelar
 reservasRoutes.post("/:id/cancelar", async (c) => {
   const id = Number(c.req.param("id"));
+  const [antes] = await db.select().from(reservas).where(eq(reservas.id, id));
   const cambios = { estado: "cancelada" as const };
   const [row] = await db
     .update(reservas)
@@ -270,5 +293,12 @@ reservasRoutes.post("/:id/cancelar", async (c) => {
     .where(eq(reservas.id, id))
     .returning();
   if (!row) return c.json({ error: "No encontrada" }, 404);
+  await logAudit(c, {
+    accion: "eliminar",
+    entidad: "reservas",
+    entidadId: id,
+    entidadLabel: `Reserva #${id} (${row.checkin} → ${row.checkout})`,
+    diff: { estado: { antes: antes?.estado ?? null, despues: "cancelada" } },
+  });
   return c.json(row);
 });

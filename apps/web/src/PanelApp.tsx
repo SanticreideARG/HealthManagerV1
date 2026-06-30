@@ -15,10 +15,11 @@ import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
 import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
 import { LandingManagerPage } from "./features/landing-manager/LandingManagerPage.js";
 import { HousekeepingPage } from "./features/housekeeping/HousekeepingPage.js";
+import { ActividadPage } from "./features/actividad/ActividadPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import logo from "./assets/suites-man-logo.png";
 
-type Vista = "calendario" | "huespedes" | "housekeeping" | "reportes" | "tarifas" | "landing" | "config";
+type Vista = "calendario" | "huespedes" | "housekeeping" | "reportes" | "tarifas" | "landing" | "config" | "actividad";
 
 interface NavDef {
   id: Vista;
@@ -163,6 +164,7 @@ export function PanelApp() {
         {vista === "housekeeping" && <HousekeepingPage />}
         {vista === "tarifas" && esAdmin && <TarifasPage />}
         {vista === "landing" && esAdmin && <LandingManagerPage />}
+        {vista === "actividad" && esAdmin && <ActividadPage />}
         {vista === "config" && esAdmin && <ConfiguracionPage />}
       </main>
     </div>
@@ -483,6 +485,12 @@ const iconLanding = (
   </svg>
 );
 
+const iconActivity = (
+  <svg {...svgProps}>
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+  </svg>
+);
+
 const iconBroom = (
   <svg {...svgProps}>
     <path d="M9 4L5 20" strokeLinecap="round"/>
@@ -499,8 +507,9 @@ const NAV_MAIN: NavDef[] = [
 ];
 
 const NAV_ADMIN: NavDef[] = [
-  { id: "reportes", label: "Reportes", icon: iconChart, soloAdmin: true },
-  { id: "tarifas", label: "Tarifas", icon: iconTag, soloAdmin: true },
-  { id: "landing", label: "Landing", icon: iconLanding, soloAdmin: true },
-  { id: "config", label: "Configuración", icon: iconSettings, soloAdmin: true },
+  { id: "reportes",  label: "Reportes",       icon: iconChart,    soloAdmin: true },
+  { id: "tarifas",   label: "Tarifas",        icon: iconTag,      soloAdmin: true },
+  { id: "landing",   label: "Landing",        icon: iconLanding,  soloAdmin: true },
+  { id: "actividad", label: "Actividad",      icon: iconActivity, soloAdmin: true },
+  { id: "config",    label: "Configuración",  icon: iconSettings, soloAdmin: true },
 ];

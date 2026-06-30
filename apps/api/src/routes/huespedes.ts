@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { and, db, desc, eq, ne, habitaciones, huespedes, reservas } from "@suites/db";
 import { huespedCreate, huespedUpdate } from "@suites/shared";
 import { staff } from "../middleware/auth.js";
+import { logAudit, computeDiff, diffCrear, diffEliminar } from "../lib/audit.js";
 
 export const huespedesRoutes = new Hono();
 huespedesRoutes.use("*", staff);
@@ -36,18 +37,33 @@ huespedesRoutes.get("/alojados", async (c) => {
 huespedesRoutes.post("/", zValidator("json", huespedCreate), async (c) => {
   const data = c.req.valid("json");
   const [row] = await db.insert(huespedes).values(data).returning();
+  await logAudit(c, {
+    accion: "crear",
+    entidad: "huespedes",
+    entidadId: row.id,
+    entidadLabel: row.nombre,
+    diff: diffCrear(row as any, ["nombre", "documento", "email", "telefono"]),
+  });
   return c.json(row, 201);
 });
 
 huespedesRoutes.patch("/:id", zValidator("json", huespedUpdate), async (c) => {
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
+  const [antes] = await db.select().from(huespedes).where(eq(huespedes.id, id));
   const [row] = await db
     .update(huespedes)
     .set(data)
     .where(eq(huespedes.id, id))
     .returning();
   if (!row) return c.json({ error: "No encontrado" }, 404);
+  await logAudit(c, {
+    accion: "editar",
+    entidad: "huespedes",
+    entidadId: id,
+    entidadLabel: row.nombre,
+    diff: computeDiff(antes as any, row as any, ["nombre", "documento", "tipoDocumento", "email", "telefono", "nacionalidad", "notas"]),
+  });
   return c.json(row);
 });
 
@@ -66,13 +82,20 @@ huespedesRoutes.delete("/:id", async (c) => {
     );
   }
 
-  // Borra sus reservas canceladas (si las hay) y luego el huésped.
+  const [antes] = await db.select().from(huespedes).where(eq(huespedes.id, id));
   await db.delete(reservas).where(eq(reservas.huespedId, id));
   const [row] = await db
     .delete(huespedes)
     .where(eq(huespedes.id, id))
     .returning();
   if (!row) return c.json({ error: "No encontrado" }, 404);
+  await logAudit(c, {
+    accion: "eliminar",
+    entidad: "huespedes",
+    entidadId: id,
+    entidadLabel: antes?.nombre ?? String(id),
+    diff: antes ? diffEliminar(antes as any, ["nombre", "documento", "email"]) : undefined,
+  });
   return c.json({ ok: true });
 });
 

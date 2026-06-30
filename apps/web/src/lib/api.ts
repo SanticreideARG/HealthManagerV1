@@ -59,6 +59,7 @@ import type {
   Consumo,
   LandingServicio,
   LandingContacto,
+  AuditLogPage,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -93,6 +94,7 @@ export type {
   Consumo,
   LandingServicio,
   LandingContacto,
+  AuditLogPage,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -302,6 +304,19 @@ const realApi: ApiClient = {
       request<{ ok: true }>(`/landing-contactos/${id}`, { method: "DELETE" }),
     uploadIcono: (file: File) =>
       upload<{ url: string }>("/landing-manager/upload-imagen", file).then((r) => r.url),
+  },
+  auditLog: {
+    list: (params: { userId?: string; entidad?: string; accion?: string; desde?: string; hasta?: string; q?: string; page?: number } = {}) => {
+      const qs = new URLSearchParams();
+      if (params.userId)  qs.set("userId",  params.userId);
+      if (params.entidad) qs.set("entidad", params.entidad);
+      if (params.accion)  qs.set("accion",  params.accion);
+      if (params.desde)   qs.set("desde",   params.desde);
+      if (params.hasta)   qs.set("hasta",   params.hasta);
+      if (params.q)       qs.set("q",       params.q);
+      if (params.page)    qs.set("page",    String(params.page));
+      return request<AuditLogPage>(`/audit-log?${qs.toString()}`);
+    },
   },
   reportes: {
     resumen: (desde: string, hasta: string) =>

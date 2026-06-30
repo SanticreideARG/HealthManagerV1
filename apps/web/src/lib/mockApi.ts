@@ -25,6 +25,8 @@ import type {
   Consumo,
   LandingServicio,
   LandingContacto,
+  AuditLogEntry,
+  AuditLogPage,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { addDays, diffDays } from "./fechas.js";
@@ -1146,6 +1148,34 @@ export const mockApi: ApiClient = {
       const r = reservas.find((x) => x.id === id);
       if (r) r.estado = "cancelada";
       return delay(r);
+    },
+  },
+  auditLog: {
+    list: (params = {}) => {
+      const entries: AuditLogEntry[] = [
+        { id: 1, timestamp: new Date(Date.now() - 60000).toISOString(), userId: "u1", userName: "Admin", userEmail: "admin@hotel.com", accion: "crear", entidad: "reservas", entidadId: "42", entidadLabel: "Hab. Suite / Juan Pérez", diff: JSON.stringify({ checkin: { antes: null, despues: "2026-07-01" }, checkout: { antes: null, despues: "2026-07-05" } }), ip: "192.168.1.1" },
+        { id: 2, timestamp: new Date(Date.now() - 3600000).toISOString(), userId: "u1", userName: "Admin", userEmail: "admin@hotel.com", accion: "editar", entidad: "habitaciones", entidadId: "3", entidadLabel: "Suite Premium", diff: JSON.stringify({ tarifaBase: { antes: "12000", despues: "15000" } }), ip: "192.168.1.1" },
+        { id: 3, timestamp: new Date(Date.now() - 7200000).toISOString(), userId: "u2", userName: "Gestor", userEmail: "gestor@hotel.com", accion: "eliminar", entidad: "huespedes", entidadId: "7", entidadLabel: "María García", diff: JSON.stringify({ nombre: { antes: "María García", despues: null } }), ip: "192.168.1.2" },
+      ];
+      const PAGE_SIZE = 50;
+      let filtered = [...entries];
+      if (params.userId) filtered = filtered.filter((e) => e.userId === params.userId);
+      if (params.entidad) filtered = filtered.filter((e) => e.entidad === params.entidad);
+      if (params.accion) filtered = filtered.filter((e) => e.accion === params.accion);
+      if (params.desde) filtered = filtered.filter((e) => e.timestamp >= params.desde!);
+      if (params.hasta) filtered = filtered.filter((e) => e.timestamp <= params.hasta!);
+      if (params.q) {
+        const q = params.q.toLowerCase();
+        filtered = filtered.filter((e) => (e.userName + e.userEmail + e.entidadLabel + e.entidad).toLowerCase().includes(q));
+      }
+      const page = params.page ?? 1;
+      const result: AuditLogPage = {
+        items: filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+        total: filtered.length,
+        page,
+        pageSize: PAGE_SIZE,
+      };
+      return delay(result);
     },
   },
 };

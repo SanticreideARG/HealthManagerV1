@@ -4,6 +4,7 @@ import { db, eq, habitaciones, habitacionAmenidades, habitacionFotos } from "@su
 import { habitacionCreate, habitacionUpdate } from "@suites/shared";
 import { staff, adminOnly } from "../middleware/auth.js";
 import { getHabitacionAmenidades, habitacionAmenidadesSet } from "./amenidades.js";
+import { logAudit, computeDiff, diffCrear, diffEliminar } from "../lib/audit.js";
 import { put, del } from "@vercel/blob";
 import { z } from "zod";
 
@@ -27,6 +28,13 @@ habitacionesRoutes.post("/", adminOnly, zValidator("json", habitacionCreate), as
     .insert(habitaciones)
     .values(values as any)
     .returning();
+  await logAudit(c, {
+    accion: "crear",
+    entidad: "habitaciones",
+    entidadId: row.id,
+    entidadLabel: row.nombre,
+    diff: diffCrear(row as any, ["nombre", "tipo", "capacidad", "tarifaBase"]),
+  });
   return c.json(row, 201);
 });
 
@@ -37,6 +45,7 @@ habitacionesRoutes.patch(
   async (c) => {
     const id = Number(c.req.param("id"));
     const { tarifaBase, ...resto } = c.req.valid("json");
+    const [antes] = await db.select().from(habitaciones).where(eq(habitaciones.id, id));
     const [row] = await db
       .update(habitaciones)
       .set({
@@ -46,6 +55,13 @@ habitacionesRoutes.patch(
       .where(eq(habitaciones.id, id))
       .returning();
     if (!row) return c.json({ error: "No encontrada" }, 404);
+    await logAudit(c, {
+      accion: "editar",
+      entidad: "habitaciones",
+      entidadId: id,
+      entidadLabel: row.nombre,
+      diff: computeDiff(antes as any, row as any, ["nombre", "tipo", "capacidad", "tarifaBase", "estado"]),
+    });
     return c.json(row);
   },
 );
@@ -162,12 +178,20 @@ habitacionesRoutes.patch("/:id/fotos/orden", adminOnly, zValidator("json", orden
 
 habitacionesRoutes.delete("/:id", adminOnly, async (c) => {
   const id = Number(c.req.param("id"));
+  const [antes] = await db.select().from(habitaciones).where(eq(habitaciones.id, id));
   try {
     const [row] = await db
       .delete(habitaciones)
       .where(eq(habitaciones.id, id))
       .returning();
     if (!row) return c.json({ error: "No encontrada" }, 404);
+    await logAudit(c, {
+      accion: "eliminar",
+      entidad: "habitaciones",
+      entidadId: id,
+      entidadLabel: antes?.nombre ?? String(id),
+      diff: antes ? diffEliminar(antes as any, ["nombre", "tipo", "capacidad"]) : undefined,
+    });
     return c.json({ ok: true });
   } catch (err) {
     // 23503 = foreign_key_violation (tiene reservas asociadas)

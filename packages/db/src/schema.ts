@@ -360,3 +360,19 @@ export type LandingFoto = typeof landingFotos.$inferSelect;
 export type LandingLink = typeof landingLinks.$inferSelect;
 export type LandingServicio = typeof landingServicios.$inferSelect;
 export type LandingContacto = typeof landingContactos.$inferSelect;
+
+// ---------- Audit Log ----------
+export const auditLog = pgTable("audit_log", {
+  id:           serial("id").primaryKey(),
+  timestamp:    timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
+  userId:       text("user_id").notNull(),
+  userName:     text("user_name").notNull(),
+  userEmail:    text("user_email").notNull(),
+  accion:       varchar("accion", { length: 20 }).notNull(),
+  entidad:      varchar("entidad", { length: 40 }).notNull(),
+  entidadId:    text("entidad_id"),
+  entidadLabel: text("entidad_label"),
+  diff:         text("diff"),  // JSON stringificado — evita import jsonb en esbuild
+  ip:           text("ip"),
+});
+export type AuditLogEntry = typeof auditLog.$inferSelect;

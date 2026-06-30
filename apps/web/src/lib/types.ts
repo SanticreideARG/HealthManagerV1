@@ -312,6 +312,27 @@ export class ApiError extends Error {
   }
 }
 
+export interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  accion: "crear" | "editar" | "eliminar";
+  entidad: string;
+  entidadId: string | null;
+  entidadLabel: string | null;
+  diff: string | null;
+  ip: string | null;
+}
+
+export interface AuditLogPage {
+  items: AuditLogEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 /** Forma común que cumplen tanto la API real como el mock. */
 export interface ApiClient {
   landing: {
@@ -463,5 +484,16 @@ export interface ApiClient {
     checkin: (id: number) => Promise<unknown>;
     checkout: (id: number) => Promise<unknown>;
     cancelar: (id: number) => Promise<unknown>;
+  };
+  auditLog: {
+    list: (params?: {
+      userId?: string;
+      entidad?: string;
+      accion?: string;
+      desde?: string;
+      hasta?: string;
+      q?: string;
+      page?: number;
+    }) => Promise<AuditLogPage>;
   };
 }

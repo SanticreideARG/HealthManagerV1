@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, authUser, desc, eq } from "@suites/db";
 import { adminOnly } from "../middleware/auth.js";
 import { auth } from "../auth.js";
+import { logAudit } from "../lib/audit.js";
 
 /** Gestión de usuarios del sistema (solo admin). */
 export const usuariosRoutes = new Hono();
@@ -47,6 +48,13 @@ usuariosRoutes.patch("/:id", zValidator("json", rolUpdate), async (c) => {
       createdAt: authUser.createdAt,
     });
   if (!row) return c.json({ error: "No encontrado" }, 404);
+  await logAudit(c, {
+    accion: "editar",
+    entidad: "usuarios",
+    entidadId: id,
+    entidadLabel: row.name,
+    diff: { role: { antes: null, despues: role } },
+  });
   return c.json(row);
 });
 
