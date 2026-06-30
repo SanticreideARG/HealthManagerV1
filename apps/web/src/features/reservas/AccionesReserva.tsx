@@ -406,9 +406,9 @@ function ExtrasSection({ reservaId }: { reservaId: number }) {
             <label className="block text-sm">
               <span className="text-slate-600 dark:text-slate-300">Cantidad</span>
               <input
-                type="number" min={0.01} step={0.01}
+                type="number" min={1} step={1}
                 value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
+                onChange={(e) => setCantidad(String(Math.max(1, Math.floor(Number(e.target.value)))))}
                 className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
