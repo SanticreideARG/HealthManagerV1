@@ -7,8 +7,8 @@ import * as schema from "./schema.js";
  * Cliente de runtime: driver HTTP de Neon (sin WebSocket).
  * Ideal para serverless (Vercel): usa fetch nativo, sin `ws` ni conexiones
  * persistentes. No soporta transacciones interactivas, así que la única
- * operación transaccional (alta de reserva) se hace con una sentencia CTE
- * única y atómica (ver apps/api/src/routes/reservas.ts).
+ * operación transaccional (alta de turno con paciente nuevo) se hace con una
+ * sentencia CTE única y atómica (ver apps/api/src/routes/turnos.ts).
  *
  * Las migraciones (DDL) usan `pg` aparte en migrate.ts; corren como script.
  */
@@ -24,51 +24,38 @@ export const db = drizzle(sql, { schema });
 
 export * as schema from "./schema.js";
 export {
-  habitaciones,
-  huespedes,
-  reservas,
-  impuestos,
-  metodosPago,
-  pagos,
-  tarifaReglas,
-  config,
-  amenidades,
-  habitacionAmenidades,
-  habitacionFotos,
+  profesionales,
+  obrasSociales,
+  profesionalObrasSociales,
+  pacientes,
+  ventanasRecurrentes,
+  ventanasExcepciones,
+  turnos,
+  configClinica,
   landingFotos,
   landingLinks,
   landingServicios,
   landingContactos,
   auditLog,
-  tareasHousekeeping,
-  servicios,
-  consumos,
-  politicasCancelacion,
   authUser,
   authSession,
   authAccount,
   authVerification,
 } from "./schema.js";
 export type {
-  Habitacion,
-  Huesped,
-  Reserva,
-  Impuesto,
-  MetodoPago,
-  Pago,
-  TarifaRegla,
-  Amenidad,
-  HabitacionAmenidad,
-  HabitacionFoto,
+  Profesional,
+  ObraSocial,
+  ProfesionalObraSocial,
+  Paciente,
+  VentanaRecurrente,
+  VentanaExcepcion,
+  Turno,
+  ConfigClinica,
   LandingFoto,
   LandingLink,
   LandingServicio,
   LandingContacto,
   AuditLogEntry,
-  TareaHousekeeping,
-  Servicio,
-  Consumo,
-  PoliticaCancelacion,
 } from "./schema.js";
 
 // Operadores de Drizzle (una sola instancia; ver nota en package del repo).

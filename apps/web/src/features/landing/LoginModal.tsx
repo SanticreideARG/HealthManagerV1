@@ -84,7 +84,7 @@ export function LoginModal({ onClose }: { onClose: () => void }) {
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-white/50">
             {modo === "login"
-              ? "Accedé a tu cuenta para gestionar reservas"
+              ? "Accedé a tu cuenta para gestionar tus turnos"
               : "Completá tus datos para registrarte"}
           </p>
         </div>
@@ -125,7 +125,7 @@ function FormLogin({
         return;
       }
       const role = (result.data?.user as { role?: string } | undefined)?.role;
-      if (role === "admin" || role === "gestor") {
+      if (role === "admin" || role === "administrativo" || role === "profesional") {
         navigate("/panel");
       } else {
         onClose();

@@ -1,5 +1,5 @@
 {
-  "name": "@suites/web",
+  "name": "@turnos/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,8 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-pdf/renderer": "^4.5.1",
-    "@suites/shared": "workspace:*",
+    "@turnos/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.11",
     "better-auth": "1.2.12",
     "exceljs": "^4.4.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@suites/api",
+  "name": "@turnos/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.4.2",
-    "@suites/db": "workspace:*",
-    "@suites/shared": "workspace:*",
+    "@turnos/db": "workspace:*",
+    "@turnos/shared": "workspace:*",
     "@vercel/blob": "^2.5.0",
     "better-auth": "^1.2.12",
     "hono": "^4.6.16",

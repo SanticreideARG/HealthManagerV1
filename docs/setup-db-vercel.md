@@ -18,7 +18,7 @@ Neon gestionado desde el panel de Vercel. Es 100% Postgres, así que nuestro sta
 2. En el menú superior andá a **Storage** → **Create Database**.
 3. Elegí **Neon — Serverless Postgres** (en el Marketplace de Vercel).
 4. Configurá:
-   - **Database name**: `suites-manager` (o el que prefieras).
+   - **Database name**: `turnos-manager` (o el que prefieras).
    - **Region**: elegí la más cercana a Argentina → **South America (São Paulo) `gru1`**
      si está disponible; si no, **US East**.
    - **Plan**: Free.
@@ -52,7 +52,7 @@ Ambas terminan en `?sslmode=require`. **No las compartas ni las subas al repo**
 
 ## Paso 3 — Configurar el proyecto
 
-En la raíz `E:\www\SuitesManager`:
+En la raíz `E:\www\TurnosManager`:
 
 ```bash
 cp .env.example .env
@@ -61,8 +61,8 @@ cp .env.example .env
 Editá `.env` y pegá las dos cadenas:
 
 ```env
-DATABASE_URL="postgres://...-pooler.../suites-manager?sslmode=require"
-DATABASE_URL_UNPOOLED="postgres://.../suites-manager?sslmode=require"
+DATABASE_URL="postgres://...-pooler.../turnos-manager?sslmode=require"
+DATABASE_URL_UNPOOLED="postgres://.../turnos-manager?sslmode=require"
 ```
 
 > **Atajo con Vercel CLI** (si conectaste la base a un proyecto de Vercel):

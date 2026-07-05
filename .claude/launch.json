@@ -4,7 +4,7 @@
     {
       "name": "web-mock",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@suites/web", "dev:mock"],
+      "runtimeArgs": ["--filter", "@turnos/web", "dev:mock"],
       "port": 5180
     }
   ]

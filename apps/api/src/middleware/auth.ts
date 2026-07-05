@@ -3,7 +3,8 @@ import { auth } from "../auth.js";
 
 /**
  * Exige sesión y que el rol esté entre los permitidos.
- * Roles: admin (todo), gestor (operación), cliente (solo portal).
+ * Roles: admin (todo), profesional (sus ventanas/agenda), administrativo
+ * (disponibilidad, alta de turnos y pacientes), paciente (solo portal).
  */
 export function requireRole(...roles: string[]) {
   return createMiddleware(async (c, next) => {
@@ -11,7 +12,7 @@ export function requireRole(...roles: string[]) {
     if (!session) {
       return c.json({ error: "no_auth", message: "No autenticado." }, 401);
     }
-    const role = (session.user as { role?: string }).role ?? "cliente";
+    const role = (session.user as { role?: string }).role ?? "paciente";
     if (!roles.includes(role)) {
       return c.json(
         { error: "forbidden", message: "No tenés permiso para esta acción." },
@@ -22,8 +23,11 @@ export function requireRole(...roles: string[]) {
   });
 }
 
-/** Staff del panel: administrador o gestor. */
-export const staff = requireRole("admin", "gestor");
+/** Staff del panel: administrador o administrativo. */
+export const staff = requireRole("admin", "administrativo");
 
-/** Solo administrador (reglas de negocio: config, ABM habitaciones, reportes, tarifas). */
+/** Profesional (sobre sus propios recursos) o staff. */
+export const profesionalOrStaff = requireRole("admin", "administrativo", "profesional");
+
+/** Solo administrador (reglas de negocio: config, ABM profesionales, obras sociales). */
 export const adminOnly = requireRole("admin");

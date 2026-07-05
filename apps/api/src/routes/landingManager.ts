@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db, eq, config, landingFotos, landingLinks } from "@suites/db";
+import { db, eq, configClinica, landingFotos, landingLinks } from "@turnos/db";
 import {
   landingConfigUpdate,
   landingLinkCreate,
   landingLinkUpdate,
   landingLinksOrden,
-} from "@suites/shared";
+} from "@turnos/shared";
 import { adminOnly } from "../middleware/auth.js";
 import { put, del } from "@vercel/blob";
 import { z } from "zod";
@@ -18,13 +18,13 @@ landingManagerRoutes.use("*", adminOnly);
 landingManagerRoutes.get("/config", async (c) => {
   const [row] = await db
     .select({
-      landingTagline: config.landingTagline,
-      landingSubtitulo: config.landingSubtitulo,
-      landingCtaTexto: config.landingCtaTexto,
-      landingCtaUrl: config.landingCtaUrl,
+      landingTagline: configClinica.landingTagline,
+      landingSubtitulo: configClinica.landingSubtitulo,
+      landingCtaTexto: configClinica.landingCtaTexto,
+      landingCtaUrl: configClinica.landingCtaUrl,
     })
-    .from(config)
-    .where(eq(config.id, 1));
+    .from(configClinica)
+    .where(eq(configClinica.id, 1));
   return c.json(row ?? null);
 });
 
@@ -34,14 +34,14 @@ landingManagerRoutes.put(
   async (c) => {
     const data = c.req.valid("json");
     const [row] = await db
-      .update(config)
+      .update(configClinica)
       .set(data)
-      .where(eq(config.id, 1))
+      .where(eq(configClinica.id, 1))
       .returning({
-        landingTagline: config.landingTagline,
-        landingSubtitulo: config.landingSubtitulo,
-        landingCtaTexto: config.landingCtaTexto,
-        landingCtaUrl: config.landingCtaUrl,
+        landingTagline: configClinica.landingTagline,
+        landingSubtitulo: configClinica.landingSubtitulo,
+        landingCtaTexto: configClinica.landingCtaTexto,
+        landingCtaUrl: configClinica.landingCtaUrl,
       });
     if (!row) return c.json({ error: "Config no inicializada" }, 404);
     return c.json(row);

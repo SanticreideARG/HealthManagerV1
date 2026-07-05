@@ -1,45 +1,26 @@
 import { Hono } from "hono";
-import { db, habitaciones, reservas, and, ne, lt, gt, drizzleSql } from "@suites/db";
+import { db, profesionales, eq } from "@turnos/db";
 
-/** Rutas públicas — sin autenticación. Solo lectura, info para el portal. */
+/**
+ * Rutas públicas — sin autenticación. Solo lectura, info para el portal.
+ *
+ * El cálculo de disponibilidad (expandir ventanas recurrentes, aplicar
+ * excepciones, restar turnos ocupados y trocear en slots) es el algoritmo
+ * central de Fase 1 y todavía no está implementado — ver CLAUDE.md.
+ */
 export const publicRoutes = new Hono();
 
-publicRoutes.get("/habitaciones", async (c) => {
+publicRoutes.get("/profesionales", async (c) => {
   const rows = await db
     .select({
-      id: habitaciones.id,
-      nombre: habitaciones.nombre,
-      tipo: habitaciones.tipo,
-      capacidad: habitaciones.capacidad,
-      tarifaBase: habitaciones.tarifaBase,
-      fotoUrl: drizzleSql<string | null>`(SELECT url FROM habitacion_fotos WHERE habitacion_id = ${habitaciones.id} ORDER BY orden ASC LIMIT 1)`,
+      id: profesionales.id,
+      nombre: profesionales.nombre,
+      especialidad: profesionales.especialidad,
+      ubicacion: profesionales.ubicacion,
+      color: profesionales.color,
     })
-    .from(habitaciones)
-    .orderBy(habitaciones.id);
+    .from(profesionales)
+    .where(eq(profesionales.activo, true))
+    .orderBy(profesionales.nombre);
   return c.json(rows);
-});
-
-publicRoutes.get("/disponibilidad", async (c) => {
-  const checkin = c.req.query("checkin");
-  const checkout = c.req.query("checkout");
-  if (!checkin || !checkout || checkout <= checkin) {
-    return c.json({ error: "Parámetros inválidos" }, 400);
-  }
-
-  const bloqueadas = await db
-    .select({ habitacionId: reservas.habitacionId })
-    .from(reservas)
-    .where(
-      and(
-        ne(reservas.estado, "cancelada"),
-        lt(reservas.checkin, checkout),
-        gt(reservas.checkout, checkin),
-      ),
-    );
-
-  const bloqueadasSet = new Set(bloqueadas.map((r) => r.habitacionId));
-  const todas = await db.select({ id: habitaciones.id }).from(habitaciones);
-  const disponibles = todas.filter((h) => !bloqueadasSet.has(h.id)).map((h) => h.id);
-
-  return c.json({ checkin, checkout, disponibles });
 });

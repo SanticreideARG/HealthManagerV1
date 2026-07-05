@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 
 /**
  * Genera la Build Output API de Vercel (.vercel/output/) para la API.
- * - Bundlea la función con esbuild (autocontenida: inlinea @suites/db, etc.).
+ * - Bundlea la función con esbuild (autocontenida: inlinea @turnos/db, etc.).
  * - Declara explícitamente la función y las rutas, así Vercel la despliega sin
  *   ambigüedad (sin depender de la autodetección de api/).
  */
@@ -65,7 +65,7 @@ writeFileSync(
 // Landing estático mínimo (no se sirve: todo se enruta a /api).
 writeFileSync(
   `${OUT}/static/index.html`,
-  "<!doctype html><meta charset=utf-8><title>Suites Manager API</title><h1>Suites Manager API</h1>\n",
+  "<!doctype html><meta charset=utf-8><title>Turnos Manager API</title><h1>Turnos Manager API</h1>\n",
 );
 
 console.log("Build Output generado en .vercel/output");

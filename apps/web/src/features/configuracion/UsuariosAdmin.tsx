@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api.js";
 
-const roles = ["admin", "gestor", "cliente"] as const;
+const roles = ["admin", "profesional", "administrativo", "paciente"] as const;
 
 export function UsuariosAdmin() {
   const qc = useQueryClient();

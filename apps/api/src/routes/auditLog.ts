@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { db, auditLog, desc, asc, and, eq, gte, lte, drizzleSql } from "@suites/db";
+import { db, auditLog, desc, asc, and, eq, gte, lte, drizzleSql } from "@turnos/db";
 import { adminOnly } from "../middleware/auth.js";
 import { AUDIT_GENESIS_HASH, computeAuditHash } from "../lib/audit.js";
 
@@ -41,10 +41,11 @@ auditLogRoutes.get("/", async (c) => {
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [{ total }] = await db
+  const [countRow] = await db
     .select({ total: drizzleSql<number>`count(*)::int` })
     .from(auditLog)
     .where(where);
+  const total = countRow?.total ?? 0;
 
   const items = await db
     .select()

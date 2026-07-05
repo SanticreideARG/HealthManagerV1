@@ -14,14 +14,14 @@ usuarios y se les asigna un rol.
 Sin esto el login "no funciona": cada cold start de la función usa un secreto
 distinto y la sesión nunca queda válida.
 
-Vercel → proyecto **API** (`suites-manager-v1-api`) → **Settings → Environment
+Vercel → proyecto **API** (`turnos-manager-api`) → **Settings → Environment
 Variables** → agregá estas 3 (Production, y Preview si querés):
 
 | Variable | Valor | Ejemplo |
 |---|---|---|
 | `BETTER_AUTH_SECRET` | un secreto fuerte y fijo | salida de `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | URL pública del **API** | `https://suites-manager-v1-api.vercel.app` |
-| `WEB_URL` | URL pública de la **web** | `https://suites-manager-v1-web.vercel.app` |
+| `BETTER_AUTH_URL` | URL pública del **API** | `https://turnos-manager-api.vercel.app` |
+| `WEB_URL` | URL pública de la **web** | `https://turnos-manager-web.vercel.app` |
 
 > Para generar el secreto: en una terminal `openssl rand -base64 32`
 > (o en Node: `node -e "console.log(crypto.randomBytes(32).toString('base64'))"`).
@@ -31,7 +31,7 @@ Después de guardar, **Deployments → Redeploy** del proyecto API.
 
 ### Verificación rápida
 ```bash
-curl -i -X POST https://suites-manager-v1-api.vercel.app/api/auth/sign-in/email \
+curl -i -X POST https://turnos-manager-api.vercel.app/api/auth/sign-in/email \
   -H "Content-Type: application/json" \
   -d '{"email":"santi.creide@gmail.com","password":"TU_PASS"}'
 ```
@@ -48,7 +48,7 @@ nombre, email y contraseña. Queda con rol **cliente** por defecto.
 
 **Opción B: por API (curl).**
 ```bash
-curl -X POST https://suites-manager-v1-api.vercel.app/api/auth/sign-up/email \
+curl -X POST https://turnos-manager-api.vercel.app/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
   -d '{"email":"persona@mail.com","password":"contraseña","name":"Nombre"}'
 ```
@@ -83,8 +83,8 @@ Roles (detalle en [roadmap.md](./roadmap.md)):
 ## Estado actual
 - Ya existe un admin: **santi.creide@gmail.com** (rol admin). Funciona apenas
   configures las variables del Paso 1 y redeploys el API.
-- Usuarios de prueba (se pueden borrar): `admin@suites.test`, `gestor@suites.test`,
-  `cliente@suites.test`.
+- Usuarios de prueba (se pueden borrar): `admin@turnos.test`, `administrativo@turnos.test`,
+  `paciente@turnos.test`.
 
 ## Síntoma: "ingreso bien pero me vuelve al login"
 Es la **cookie de sesión cross-site** que el navegador no guarda/envía (web y API en
@@ -101,7 +101,7 @@ first-party). La web hace de proxy hacia la API:
    {
      "rewrites": [
        { "source": "/backend/:path*",
-         "destination": "https://suites-manager-v1-api.vercel.app/:path*" }
+         "destination": "https://turnos-manager-api.vercel.app/:path*" }
      ]
    }
    ```

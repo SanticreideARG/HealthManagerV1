@@ -4,8 +4,8 @@ El monorepo se despliega como **dos proyectos Vercel** desde el mismo repo de
 GitHub: uno para la web (Vite) y otro para la API (Hono serverless).
 
 ```
-Repo  ──┬──> Proyecto "suites-web"  (Root Directory: apps/web)
-        └──> Proyecto "suites-api"  (Root Directory: apps/api)
+Repo  ──┬──> Proyecto "turnos-web"  (Root Directory: apps/web)
+        └──> Proyecto "turnos-api"  (Root Directory: apps/api)
 ```
 
 ---
@@ -26,7 +26,7 @@ pnpm db:seed   # opcional
 
 ---
 
-## 2. Proyecto API (`suites-api`)
+## 2. Proyecto API (`turnos-api`)
 
 En Vercel → Add New → Project → importás el repo y creás un proyecto con:
 
@@ -46,18 +46,18 @@ Cómo funciona:
 - El cliente de DB usa el **driver serverless de Neon** (`@neondatabase/serverless`
   por WebSocket), que funciona en funciones efímeras y soporta transacciones.
 
-Tras desplegar, probá: `https://suites-api-xxx.vercel.app/health` → `{"status":"ok"}`.
+Tras desplegar, probá: `https://turnos-api-xxx.vercel.app/health` → `{"status":"ok"}`.
 
 ---
 
-## 3. Proyecto Web (`suites-web`)
+## 3. Proyecto Web (`turnos-web`)
 
 Otro proyecto Vercel sobre el mismo repo:
 
 - **Root Directory**: `apps/web`
 - **Framework Preset**: `Vite`
 - **Environment Variables**:
-  - `VITE_API_URL` → la URL del proyecto API (ej. `https://suites-api-xxx.vercel.app`).
+  - `VITE_API_URL` → la URL del proyecto API (ej. `https://turnos-api-xxx.vercel.app`).
     ⚠️ Vite **inyecta las env en build**: si cambiás esta URL, hay que redeployar la web.
 
 > No definas `VITE_MOCK` en producción (o ponelo en 0): en prod la web pega a la API real.
@@ -67,12 +67,12 @@ Otro proyecto Vercel sobre el mismo repo:
 ## 4. Notas
 
 - **Monorepo + pnpm**: Vercel detecta `pnpm-workspace.yaml`. Si algún build no
-  encuentra `@suites/db` / `@suites/shared`, verificá que esté activado
+  encuentra `@turnos/db` / `@turnos/shared`, verificá que esté activado
   "Include files outside of the Root Directory" (default en pnpm).
 - **CORS**: la API hoy habilita CORS abierto. Para producción conviene
   restringirlo al dominio de la web (en `apps/api/src/app.ts`).
 - **Una sola instancia de drizzle-orm**: la API importa los operadores
-  (`eq`, `and`, …) desde `@suites/db`, no desde `drizzle-orm`, para evitar
+  (`eq`, `and`, …) desde `@turnos/db`, no desde `drizzle-orm`, para evitar
   choques de tipos por peers duplicados en el build.
 - **Local vs Vercel**: en local `pnpm dev:api` corre `src/index.ts` (servidor Node
   con `serve()`); en Vercel se usa `api/index.ts` (serverless). Misma app.

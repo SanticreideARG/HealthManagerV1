@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api.js";
 import type { AuditLogEntry, AuditVerifyResult } from "../../lib/types.js";
 
-const ENTIDADES = ["reservas", "huespedes", "habitaciones", "pagos", "tarifas", "usuarios"];
+const ENTIDADES = ["turnos", "pacientes", "profesionales", "ventanas", "usuarios"];
 const ACCIONES = ["crear", "editar", "eliminar"] as const;
 
 const ACCION_LABEL: Record<string, string> = {

@@ -11,7 +11,7 @@ El provider de Google se agrega como plugin; no requiere dependencias extra.
 
 1. Ir a [console.cloud.google.com](https://console.cloud.google.com)
 2. Menú superior → **Seleccionar proyecto** → **Nuevo proyecto**
-   - Nombre: `SuitesManager` (o el que prefieras)
+   - Nombre: `TurnosManager` (o el que prefieras)
    - Organización: ninguna (personal) o la tuya
 
 ### 1.2 Habilitar la API de Google Identity
@@ -26,10 +26,10 @@ El provider de Google se agrega como plugin; no requiere dependencias extra.
 1. **APIs y servicios** → **Pantalla de consentimiento de OAuth**
 2. Tipo de usuario: **Externo** (para usuarios fuera de tu organización G Suite)
 3. Completar:
-   - **Nombre de la app**: "SuitesManager" (o el nombre del alojamiento)
+   - **Nombre de la app**: "TurnosManager" (o el nombre del alojamiento)
    - **Email de soporte**: tu email
    - **Logo**: opcional (el logo del alojamiento)
-   - **Dominio de la app**: tu dominio de producción (ej. `suites-manager.vercel.app`)
+   - **Dominio de la app**: tu dominio de producción (ej. `turnos-manager.vercel.app`)
    - **Datos de contacto del desarrollador**: tu email
 4. Scopes: **Agregar o quitar scopes** → seleccionar:
    - `.../auth/userinfo.email`
@@ -45,7 +45,7 @@ El provider de Google se agrega como plugin; no requiere dependencias extra.
 
 1. **APIs y servicios** → **Credenciales** → **+ Crear credenciales** → **ID de cliente de OAuth**
 2. Tipo de aplicación: **Aplicación web**
-3. Nombre: `SuitesManager Web`
+3. Nombre: `TurnosManager Web`
 4. **Orígenes de JS autorizados**:
    ```
    http://localhost:5182
@@ -93,8 +93,8 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
 ```typescript
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@suites/db";
-import * as schema from "@suites/db/schema";
+import { db } from "@turnos/db";
+import * as schema from "@turnos/db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),

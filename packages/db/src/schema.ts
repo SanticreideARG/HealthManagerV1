@@ -5,8 +5,8 @@ import {
   serial,
   varchar,
   integer,
-  numeric,
   date,
+  time,
   timestamp,
   text,
   boolean,
@@ -21,206 +21,27 @@ import {
  * fuente de verdad del DDL. Mantené ambos en sync.
  */
 
-export const estadoHabitacionEnum = pgEnum("estado_habitacion", [
-  "libre",
-  "mantenimiento",
+export const modoConfirmacionEnum = pgEnum("modo_confirmacion", [
+  "automatico",
+  "aprobacion",
 ]);
 
-export const estadoReservaEnum = pgEnum("estado_reserva", [
-  "reservada",
-  "ocupada",
-  "checkout",
-  "cancelada",
-  "mantenimiento", // bloqueo de mantenimiento programado (sin huésped)
+export const tipoExcepcionVentanaEnum = pgEnum("tipo_excepcion_ventana", [
+  "agrega",
+  "bloquea",
 ]);
 
-export const metodoPagoEnum = pgEnum("metodo_pago", [
-  "efectivo",
-  "transferencia",
+export const origenTurnoEnum = pgEnum("origen_turno", ["online", "administrativo"]);
+
+export const estadoTurnoEnum = pgEnum("estado_turno", [
+  "solicitado",
+  "confirmado",
+  "en_sala",
+  "atendido",
+  "ausente",
+  "cancelado",
+  "bloqueo",
 ]);
-
-export const tipoTarifaEnum = pgEnum("tipo_tarifa", ["rango", "finde"]);
-
-export const habitaciones = pgTable("habitaciones", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 80 }).notNull(),
-  tipo: varchar("tipo", { length: 60 }).notNull().default("Standard"),
-  capacidad: integer("capacidad").notNull(),
-  tarifaBase: numeric("tarifa_base", { precision: 12, scale: 2 })
-    .notNull()
-    .default("0"),
-  estado: estadoHabitacionEnum("estado").notNull().default("libre"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-export const huespedes = pgTable("huespedes", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  documento: varchar("documento", { length: 40 }),
-  tipoDocumento: varchar("tipo_documento", { length: 30 }), // DNI | Pasaporte | CE | Otro
-  nacionalidad: varchar("nacionalidad", { length: 80 }),
-  fechaNacimiento: date("fecha_nacimiento"),
-  email: varchar("email", { length: 160 }),
-  telefono: varchar("telefono", { length: 40 }),
-  notas: text("notas"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-export const reservas = pgTable(
-  "reservas",
-  {
-    id: serial("id").primaryKey(),
-    habitacionId: integer("habitacion_id")
-      .notNull()
-      .references(() => habitaciones.id),
-    // NULL para bloqueos de mantenimiento (estado 'mantenimiento').
-    huespedId: integer("huesped_id").references(() => huespedes.id),
-    checkin: date("checkin").notNull(), // primera noche
-    checkout: date("checkout").notNull(), // día de salida (exclusivo)
-    estado: estadoReservaEnum("estado").notNull().default("reservada"),
-    total: numeric("total", { precision: 12, scale: 2 }).notNull().default("0"),
-    notas: text("notas"),
-    checkinAt: timestamp("checkin_at", { withTimezone: true }),
-    checkoutAt: timestamp("checkout_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [index("idx_reservas_habitacion").on(t.habitacionId)],
-);
-
-// ---------- Módulo de facturación ----------
-
-export const impuestos = pgTable("impuestos", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  tipo: varchar("tipo", { length: 20 }).notNull(), // 'porcentaje' | 'monto_fijo'
-  valor: numeric("valor", { precision: 8, scale: 4 }).notNull(),
-  aplicaA: varchar("aplica_a", { length: 30 }).notNull().default("todo"),
-  activo: boolean("activo").notNull().default(true),
-  orden: integer("orden").notNull().default(0),
-});
-
-export const metodosPago = pgTable("metodos_pago", {
-  id: serial("id").primaryKey(),
-  tipo: varchar("tipo", { length: 30 }).notNull(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  banco: varchar("banco", { length: 80 }),
-  cuotas: integer("cuotas").notNull().default(1),
-  recargoPct: numeric("recargo_pct", { precision: 5, scale: 2 }).notNull().default("0"),
-  proveedor: varchar("proveedor", { length: 80 }),
-  activo: boolean("activo").notNull().default(true),
-});
-
-export const pagos = pgTable("pagos", {
-  id: serial("id").primaryKey(),
-  reservaId: integer("reserva_id")
-    .notNull()
-    .references(() => reservas.id),
-  metodo: metodoPagoEnum("metodo"), // nullable: legacy field; nuevos pagos usan metodoId
-  metodoId: integer("metodo_id").references(() => metodosPago.id),
-  monto: numeric("monto", { precision: 12, scale: 2 }).notNull(),
-  montoBase: numeric("monto_base", { precision: 12, scale: 2 }),
-  montoExtras: numeric("monto_extras", { precision: 12, scale: 2 }).notNull().default("0"),
-  referencia: varchar("referencia", { length: 200 }),
-  notas: text("notas"),
-  fecha: timestamp("fecha", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const tarifaReglas = pgTable("tarifa_reglas", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  tipo: tipoTarifaEnum("tipo").notNull(),
-  desde: date("desde"), // para tipo 'rango'
-  hasta: date("hasta"), // para tipo 'rango' (exclusivo)
-  factor: numeric("factor", { precision: 5, scale: 2 }).notNull().default("1"),
-  monto: numeric("monto", { precision: 12, scale: 2 }).notNull().default("0"),
-  prioridad: integer("prioridad").notNull().default(0),
-  activa: boolean("activa").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-export const config = pgTable("config", {
-  id: integer("id").primaryKey().default(1),
-  nombre: varchar("nombre", { length: 120 }).notNull().default("Mi Alojamiento"),
-  razonSocial: varchar("razon_social", { length: 160 }),
-  cuit: varchar("cuit", { length: 20 }),
-  direccion: varchar("direccion", { length: 200 }),
-  cp: varchar("cp", { length: 20 }),
-  ciudad: varchar("ciudad", { length: 120 }),
-  provincia: varchar("provincia", { length: 120 }),
-  pais: varchar("pais", { length: 120 }),
-  telefono: varchar("telefono", { length: 40 }),
-  email: varchar("email", { length: 160 }),
-  logoUrl: text("logo_url"),
-  // Landing page
-  landingTagline: varchar("landing_tagline", { length: 200 }),
-  landingSubtitulo: varchar("landing_subtitulo", { length: 400 }),
-  landingCtaTexto: varchar("landing_cta_texto", { length: 80 }),
-  landingCtaUrl: varchar("landing_cta_url", { length: 200 }),
-});
-
-// ---------- Landing Manager ----------
-export const landingFotos = pgTable("landing_fotos", {
-  id: serial("id").primaryKey(),
-  url: text("url").notNull(),
-  altTexto: varchar("alt_texto", { length: 200 }),
-  orden: integer("orden").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const landingLinks = pgTable("landing_links", {
-  id: serial("id").primaryKey(),
-  label: varchar("label", { length: 120 }).notNull(),
-  url: varchar("url", { length: 300 }).notNull(),
-  orden: integer("orden").notNull().default(0),
-  activa: boolean("activa").notNull().default(true),
-});
-
-// ---------- Fotos de alojamiento (URLs en Vercel Blob) ----------
-export const habitacionFotos = pgTable("habitacion_fotos", {
-  id: serial("id").primaryKey(),
-  habitacionId: integer("habitacion_id")
-    .notNull()
-    .references(() => habitaciones.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
-  orden: integer("orden").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// ---------- Amenidades (catálogo de características de alojamientos) ----------
-export const tipoAmenidadEnum = pgEnum("tipo_amenidad", [
-  "bool",
-  "texto",
-  "numero",
-]);
-
-export const amenidades = pgTable("amenidades", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  tipo: tipoAmenidadEnum("tipo").notNull().default("bool"),
-  icono: varchar("icono", { length: 10 }),
-});
-
-export const habitacionAmenidades = pgTable(
-  "habitacion_amenidades",
-  {
-    habitacionId: integer("habitacion_id")
-      .notNull()
-      .references(() => habitaciones.id, { onDelete: "cascade" }),
-    amenidadId: integer("amenidad_id")
-      .notNull()
-      .references(() => amenidades.id, { onDelete: "cascade" }),
-    valor: text("valor"), // null = true para bool; string para texto/numero
-  },
-  (t) => [primaryKey({ columns: [t.habitacionId, t.amenidadId] })],
-);
 
 // ---------- Better Auth (tablas auth_*; nombres de propiedad = campos de Better Auth) ----------
 export const authUser = pgTable("auth_user", {
@@ -229,7 +50,7 @@ export const authUser = pgTable("auth_user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  role: text("role").notNull().default("cliente"), // admin | gestor | cliente
+  role: text("role").notNull().default("paciente"), // admin | profesional | administrativo | paciente
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -274,68 +95,164 @@ export const authVerification = pgTable("auth_verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-// ---------- Housekeeping ----------
-export const tareasHousekeeping = pgTable("tareas_housekeeping", {
+// ---------- Profesionales (recurso reservable + usuario opcional) ----------
+export const profesionales = pgTable("profesionales", {
   id: serial("id").primaryKey(),
-  habitacionId: integer("habitacion_id")
-    .notNull()
-    .references(() => habitaciones.id),
-  reservaId: integer("reserva_id").references(() => reservas.id),
-  tipo: varchar("tipo", { length: 30 }).notNull().default("limpieza"),
-  descripcion: text("descripcion"),
-  prioridad: varchar("prioridad", { length: 20 }).notNull().default("normal"),
-  estado: varchar("estado", { length: 20 }).notNull().default("pendiente"),
-  fechaProgramada: date("fecha_programada").notNull(),
-  asignadoA: varchar("asignado_a", { length: 120 }),
-  notas: text("notas"),
-  completadoAt: timestamp("completado_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-export type TareaHousekeeping = typeof tareasHousekeeping.$inferSelect;
-
-// ---------- Servicios adicionales / Consumos ----------
-// Categorías fijas (decisión 2026-06-26): Servicios/Consumos/Cargos suman al
-// total; Bonificaciones resta.
-export const categoriaCargoEnum = pgEnum("categoria_cargo", [
-  "servicios",
-  "consumos",
-  "cargos",
-  "bonificaciones",
-]);
-
-export const servicios = pgTable("servicios", {
-  id: serial("id").primaryKey(),
+  authUserId: text("auth_user_id").references(() => authUser.id, { onDelete: "set null" }),
   nombre: varchar("nombre", { length: 120 }).notNull(),
-  descripcion: text("descripcion"),
-  precio: numeric("precio", { precision: 12, scale: 2 }).notNull().default("0"),
-  unidad: varchar("unidad", { length: 40 }).notNull().default("unidad"),
-  categoria: categoriaCargoEnum("categoria").notNull().default("servicios"),
+  especialidad: varchar("especialidad", { length: 120 }).notNull(),
+  duracionTurnoDefault: integer("duracion_turno_default"), // minutos; fallback a config
+  modoConfirmacionDefault: modoConfirmacionEnum("modo_confirmacion_default"),
+  ubicacion: varchar("ubicacion", { length: 200 }),
+  color: varchar("color", { length: 20 }),
   activo: boolean("activo").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
-export type Servicio = typeof servicios.$inferSelect;
 
-export const consumos = pgTable(
-  "consumos",
+// ---------- Obras sociales ----------
+export const obrasSociales = pgTable("obras_sociales", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 120 }).notNull().unique(),
+  activa: boolean("activa").notNull().default(true),
+});
+
+export const profesionalObrasSociales = pgTable(
+  "profesional_obras_sociales",
+  {
+    profesionalId: integer("profesional_id")
+      .notNull()
+      .references(() => profesionales.id, { onDelete: "cascade" }),
+    obraSocialId: integer("obra_social_id")
+      .notNull()
+      .references(() => obrasSociales.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.profesionalId, t.obraSocialId] })],
+);
+
+// ---------- Pacientes (era huéspedes) ----------
+export const pacientes = pgTable("pacientes", {
+  id: serial("id").primaryKey(),
+  authUserId: text("auth_user_id").references(() => authUser.id, { onDelete: "set null" }),
+  nombre: varchar("nombre", { length: 120 }).notNull(),
+  documento: varchar("documento", { length: 40 }),
+  tipoDocumento: varchar("tipo_documento", { length: 30 }), // DNI | Pasaporte | CE | Otro
+  fechaNacimiento: date("fecha_nacimiento"),
+  email: varchar("email", { length: 160 }),
+  telefono: varchar("telefono", { length: 40 }),
+  obraSocialId: integer("obra_social_id").references(() => obrasSociales.id),
+  nroAfiliado: varchar("nro_afiliado", { length: 60 }),
+  notas: text("notas"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- Ventanas de trabajo ----------
+export const ventanasRecurrentes = pgTable(
+  "ventanas_recurrentes",
   {
     id: serial("id").primaryKey(),
-    reservaId: integer("reserva_id")
+    profesionalId: integer("profesional_id")
       .notNull()
-      .references(() => reservas.id),
-    servicioId: integer("servicio_id").references(() => servicios.id),
-    descripcion: varchar("descripcion", { length: 200 }).notNull(),
-    categoria: categoriaCargoEnum("categoria").notNull().default("servicios"),
-    cantidad: numeric("cantidad", { precision: 8, scale: 2 }).notNull().default("1"),
-    precioUnit: numeric("precio_unit", { precision: 12, scale: 2 }).notNull(),
-    subtotal: numeric("subtotal", { precision: 12, scale: 2 }).notNull(),
-    fecha: timestamp("fecha", { withTimezone: true }).notNull().defaultNow(),
-    notas: text("notas"),
+      .references(() => profesionales.id, { onDelete: "cascade" }),
+    diaSemana: integer("dia_semana").notNull(), // 0=domingo .. 6=sábado
+    horaInicio: time("hora_inicio").notNull(),
+    horaFin: time("hora_fin").notNull(),
+    duracionTurno: integer("duracion_turno"), // minutos; nullable → fallback
+    modoConfirmacion: modoConfirmacionEnum("modo_confirmacion"), // nullable → fallback
+    vigenciaDesde: date("vigencia_desde").notNull(),
+    vigenciaHasta: date("vigencia_hasta"),
+    activa: boolean("activa").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("idx_consumos_reserva").on(t.reservaId)],
+  (t) => [index("idx_ventanas_recurrentes_profesional").on(t.profesionalId)],
 );
-export type Consumo = typeof consumos.$inferSelect;
 
-// ---------- Landing Servicios / Contactos ----------
+export const ventanasExcepciones = pgTable(
+  "ventanas_excepciones",
+  {
+    id: serial("id").primaryKey(),
+    profesionalId: integer("profesional_id")
+      .notNull()
+      .references(() => profesionales.id, { onDelete: "cascade" }),
+    fecha: date("fecha").notNull(),
+    tipo: tipoExcepcionVentanaEnum("tipo").notNull(),
+    horaInicio: time("hora_inicio"), // NULL = día completo
+    horaFin: time("hora_fin"),
+    motivo: varchar("motivo", { length: 300 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_ventanas_excepciones_profesional_fecha").on(t.profesionalId, t.fecha)],
+);
+
+// ---------- Turnos (era reservas) ----------
+export const turnos = pgTable(
+  "turnos",
+  {
+    id: serial("id").primaryKey(),
+    profesionalId: integer("profesional_id")
+      .notNull()
+      .references(() => profesionales.id),
+    // NULL para bloqueos de agenda (estado 'bloqueo').
+    pacienteId: integer("paciente_id").references(() => pacientes.id),
+    inicio: timestamp("inicio", { withTimezone: true }).notNull(),
+    fin: timestamp("fin", { withTimezone: true }).notNull(),
+    estado: estadoTurnoEnum("estado").notNull().default("confirmado"),
+    esSobreturno: boolean("es_sobreturno").notNull().default(false),
+    esParticular: boolean("es_particular").notNull().default(false),
+    origen: origenTurnoEnum("origen").notNull().default("administrativo"),
+    notas: text("notas"),
+    confirmadoAt: timestamp("confirmado_at", { withTimezone: true }),
+    arriboAt: timestamp("arribo_at", { withTimezone: true }),
+    atendidoAt: timestamp("atendido_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_turnos_profesional").on(t.profesionalId, t.inicio),
+    index("idx_turnos_paciente").on(t.pacienteId),
+  ],
+);
+
+// ---------- Configuración de la clínica ----------
+export const configClinica = pgTable("config_clinica", {
+  id: integer("id").primaryKey().default(1),
+  nombre: varchar("nombre", { length: 120 }).notNull().default("Mi Clínica"),
+  razonSocial: varchar("razon_social", { length: 160 }),
+  cuit: varchar("cuit", { length: 20 }),
+  direccion: varchar("direccion", { length: 200 }),
+  cp: varchar("cp", { length: 20 }),
+  ciudad: varchar("ciudad", { length: 120 }),
+  provincia: varchar("provincia", { length: 120 }),
+  pais: varchar("pais", { length: 120 }),
+  telefono: varchar("telefono", { length: 40 }),
+  email: varchar("email", { length: 160 }),
+  logoUrl: text("logo_url"),
+  duracionDefault: integer("duracion_default").notNull().default(30),
+  modoConfirmacionDefault: modoConfirmacionEnum("modo_confirmacion_default")
+    .notNull()
+    .default("automatico"),
+  // Landing page
+  landingTagline: varchar("landing_tagline", { length: 200 }),
+  landingSubtitulo: varchar("landing_subtitulo", { length: 400 }),
+  landingCtaTexto: varchar("landing_cta_texto", { length: 80 }),
+  landingCtaUrl: varchar("landing_cta_url", { length: 200 }),
+});
+
+// ---------- Landing pública (reciclado de Suites) ----------
+export const landingFotos = pgTable("landing_fotos", {
+  id: serial("id").primaryKey(),
+  url: text("url").notNull(),
+  altTexto: varchar("alt_texto", { length: 200 }),
+  orden: integer("orden").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const landingLinks = pgTable("landing_links", {
+  id: serial("id").primaryKey(),
+  label: varchar("label", { length: 120 }).notNull(),
+  url: varchar("url", { length: 300 }).notNull(),
+  orden: integer("orden").notNull().default(0),
+  activa: boolean("activa").notNull().default(true),
+});
+
 export const landingServicios = pgTable("landing_servicios", {
   id: serial("id").primaryKey(),
   titulo: varchar("titulo", { length: 120 }).notNull(),
@@ -356,32 +273,6 @@ export const landingContactos = pgTable("landing_contactos", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type Habitacion = typeof habitaciones.$inferSelect;
-export type Huesped = typeof huespedes.$inferSelect;
-export type Reserva = typeof reservas.$inferSelect;
-export type Impuesto = typeof impuestos.$inferSelect;
-export type MetodoPago = typeof metodosPago.$inferSelect;
-export type Pago = typeof pagos.$inferSelect;
-export type TarifaRegla = typeof tarifaReglas.$inferSelect;
-export type Amenidad = typeof amenidades.$inferSelect;
-export type HabitacionAmenidad = typeof habitacionAmenidades.$inferSelect;
-export type HabitacionFoto = typeof habitacionFotos.$inferSelect;
-export type LandingFoto = typeof landingFotos.$inferSelect;
-export type LandingLink = typeof landingLinks.$inferSelect;
-export type LandingServicio = typeof landingServicios.$inferSelect;
-export type LandingContacto = typeof landingContactos.$inferSelect;
-
-// ---------- Políticas de cancelación ----------
-export const politicasCancelacion = pgTable("politicas_cancelacion", {
-  id: serial("id").primaryKey(),
-  nombre: varchar("nombre", { length: 120 }).notNull(),
-  diasMinimos: integer("dias_minimos").notNull().default(0),
-  porcentaje: numeric("porcentaje", { precision: 5, scale: 2 }).notNull().default("0"),
-  activa: boolean("activa").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-export type PoliticaCancelacion = typeof politicasCancelacion.$inferSelect;
-
 // ---------- Audit Log ----------
 export const auditLog = pgTable("audit_log", {
   id:           serial("id").primaryKey(),
@@ -398,4 +289,17 @@ export const auditLog = pgTable("audit_log", {
   hash:         text("hash"),           // sha256(hashAnterior + datos de la fila)
   hashAnterior: text("hash_anterior"),  // hash de la fila previa (cadena tamper-evident)
 });
+
+export type Profesional = typeof profesionales.$inferSelect;
+export type ObraSocial = typeof obrasSociales.$inferSelect;
+export type ProfesionalObraSocial = typeof profesionalObrasSociales.$inferSelect;
+export type Paciente = typeof pacientes.$inferSelect;
+export type VentanaRecurrente = typeof ventanasRecurrentes.$inferSelect;
+export type VentanaExcepcion = typeof ventanasExcepciones.$inferSelect;
+export type Turno = typeof turnos.$inferSelect;
+export type ConfigClinica = typeof configClinica.$inferSelect;
+export type LandingFoto = typeof landingFotos.$inferSelect;
+export type LandingLink = typeof landingLinks.$inferSelect;
+export type LandingServicio = typeof landingServicios.$inferSelect;
+export type LandingContacto = typeof landingContactos.$inferSelect;
 export type AuditLogEntry = typeof auditLog.$inferSelect;

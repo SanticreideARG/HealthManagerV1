@@ -1,23 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api.js";
-import { HabitacionesAdmin } from "./HabitacionesAdmin.js";
-import { AmenidadesAdmin } from "./AmenidadesAdmin.js";
 import { UsuariosAdmin } from "./UsuariosAdmin.js";
-import { FacturacionAdmin } from "./FacturacionAdmin.js";
 import { LandingServiciosAdmin } from "./LandingServiciosAdmin.js";
 import { LandingContactosAdmin } from "./LandingContactosAdmin.js";
-import { PoliticasCancelacionAdmin } from "./PoliticasCancelacionAdmin.js";
 
-type Tab = "datos" | "logo" | "alojamientos" | "caracteristicas" | "facturacion" | "cancelaciones" | "usuarios" | "servicios-landing" | "contacto-landing";
+type Tab = "datos" | "logo" | "usuarios" | "servicios-landing" | "contacto-landing";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "datos", label: "Datos" },
   { id: "logo", label: "Logo" },
-  { id: "alojamientos", label: "Alojamientos" },
-  { id: "caracteristicas", label: "Características" },
-  { id: "facturacion", label: "Facturación" },
-  { id: "cancelaciones", label: "Cancelaciones" },
   { id: "usuarios", label: "Usuarios" },
   { id: "servicios-landing", label: "Servicios (landing)" },
   { id: "contacto-landing", label: "Contacto (landing)" },
@@ -62,10 +54,6 @@ export function ConfiguracionPage() {
 
       {tab === "datos" && <DatosTab />}
       {tab === "logo" && <LogoTab />}
-      {tab === "alojamientos" && <HabitacionesAdmin />}
-      {tab === "caracteristicas" && <AmenidadesAdmin />}
-      {tab === "facturacion" && <FacturacionAdmin />}
-      {tab === "cancelaciones" && <PoliticasCancelacionAdmin />}
       {tab === "usuarios" && <UsuariosAdmin />}
       {tab === "servicios-landing" && <LandingServiciosAdmin />}
       {tab === "contacto-landing" && <LandingContactosAdmin />}
@@ -108,7 +96,7 @@ function DatosTab() {
   return (
     <div className="max-w-2xl space-y-5">
       <p className="text-sm text-slate-400">
-        Se usan en los comprobantes y la facturación.
+        Datos generales de la clínica, visibles en el panel y la landing.
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {campos.map(([k, label]) => (
@@ -170,7 +158,7 @@ function LogoTab() {
   return (
     <div className="max-w-lg space-y-5">
       <p className="text-sm text-slate-400">
-        Se muestra en el panel y en los comprobantes. Se reemplaza al subir uno nuevo.
+        Se muestra en el panel y en la landing. Se reemplaza al subir uno nuevo.
       </p>
       <div className="flex items-center gap-6">
         {logoUrl ? (

@@ -1,17 +1,17 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { google } from "better-auth/social-providers";
 import {
   db,
   authUser,
   authSession,
   authAccount,
   authVerification,
-} from "@suites/db";
+} from "@turnos/db";
 
 /**
  * Configuración de Better Auth. El handler se monta en app.ts (/auth/*).
- * Roles: admin | gestor | cliente (campo role en auth_user, default 'cliente').
+ * Roles: admin | profesional | administrativo | paciente (campo role en
+ * auth_user, default 'paciente').
  *
  * Nota: si Better Auth requiere transacciones interactivas (que el driver
  * neon-http no soporta), se le dará una instancia Drizzle propia con `pg`.
@@ -33,17 +33,17 @@ export const auth = betterAuth({
   }),
   emailAndPassword: { enabled: true },
   socialProviders: {
-    google: google({
+    google: {
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-    }),
+    },
   },
   user: {
     additionalFields: {
       role: {
         type: "string",
         required: false,
-        defaultValue: "cliente",
+        defaultValue: "paciente",
         input: false, // no se setea desde el cliente al registrarse
       },
     },
@@ -62,7 +62,6 @@ export const auth = betterAuth({
     "http://localhost:5180",
     "http://localhost:5182",
     "http://localhost:5173",
-    "https://suites-manager-v1-web.vercel.app",
     ...(process.env.WEB_URL ? [process.env.WEB_URL] : []),
   ],
   // En prod (https) la web y la API están en dominios distintos (cross-site):

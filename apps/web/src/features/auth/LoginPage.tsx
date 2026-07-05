@@ -41,14 +41,14 @@ export function LoginPage() {
           <div className="mb-7 flex flex-col items-center text-center">
             <img
               src={logo}
-              alt="Suites Manager"
+              alt="Turnos Manager"
               className="mb-4 h-48 w-48 rounded-2xl"
             />
             <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-              Suites Manager
+              Turnos Manager
             </h1>
             <p className="mt-1 text-sm text-slate-400">
-              Gestión inteligente de hoteles
+              Gestión de turnos para clínicas y consultorios
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export function LoginPage() {
             value={email}
             onChange={setEmail}
             autoComplete="email"
-            placeholder="usuario@hotel.com"
+            placeholder="usuario@clinica.com"
           />
 
           <div className="mt-4">

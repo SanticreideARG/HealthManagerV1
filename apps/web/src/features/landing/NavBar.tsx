@@ -27,8 +27,8 @@ export function NavBar({
   }, []);
 
   const role = (session?.user as { role?: string } | undefined)?.role;
-  const isStaff = role === "admin" || role === "gestor";
-  const isCliente = role === "cliente";
+  const isStaff = role === "admin" || role === "administrativo" || role === "profesional";
+  const isPaciente = role === "paciente";
 
   // Clases del contenedor según tema y estado de scroll
   const headerClass = isDark
@@ -60,7 +60,7 @@ export function NavBar({
         >
           <img src={logo} alt="" className="h-16 w-16 rounded-xl" />
           <span className={`text-lg font-bold transition-colors ${logoTextClass}`}>
-            Suites Manager
+            Turnos Manager
           </span>
         </button>
 
@@ -72,8 +72,8 @@ export function NavBar({
           >
             Inicio
           </a>
-          <a href="#alojamientos" className={`text-sm font-medium transition-colors ${linkClass}`}>
-            Alojamientos
+          <a href="#profesionales" className={`text-sm font-medium transition-colors ${linkClass}`}>
+            Profesionales
           </a>
           <button
             type="button"
@@ -116,7 +116,7 @@ export function NavBar({
             >
               Ir al Panel
             </button>
-          ) : isCliente ? (
+          ) : isPaciente ? (
             <button
               onClick={() => signOut()}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${linkClass}`}

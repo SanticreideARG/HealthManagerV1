@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { db, landingContactos, eq, asc } from "@suites/db";
-import { landingContactoCreate, landingContactoUpdate } from "@suites/shared";
+import { db, landingContactos, eq, asc } from "@turnos/db";
+import { landingContactoCreate, landingContactoUpdate } from "@turnos/shared";
 import { adminOnly } from "../middleware/auth.js";
 
 export const landingContactosRoutes = new Hono();

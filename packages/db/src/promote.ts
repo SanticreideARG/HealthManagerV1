@@ -2,13 +2,14 @@ import { sql } from "./index.js";
 
 /**
  * Asigna un rol a un usuario por email.
- * Uso: pnpm db:promote <email> <admin|gestor|cliente>
+ * Uso: pnpm db:promote <email> <admin|profesional|administrativo|paciente>
  */
 const email = process.argv[2];
 const role = process.argv[3];
 
-if (!email || !["admin", "gestor", "cliente"].includes(role ?? "")) {
-  console.error("Uso: pnpm db:promote <email> <admin|gestor|cliente>");
+const ROLES = ["admin", "profesional", "administrativo", "paciente"];
+if (!email || !ROLES.includes(role ?? "")) {
+  console.error(`Uso: pnpm db:promote <email> <${ROLES.join("|")}>`);
   process.exit(1);
 }
 

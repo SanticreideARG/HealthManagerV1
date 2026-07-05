@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { createHash } from "node:crypto";
-import { db, auditLog, desc } from "@suites/db";
+import { db, auditLog, desc } from "@turnos/db";
 import { auth } from "../auth.js";
 
 /** Punto de partida de la cadena de hashes (no hay fila anterior). */
@@ -95,7 +95,7 @@ interface LogParams {
  * Nota: el driver HTTP de Neon no soporta transacciones interactivas, así que
  * leer el último hash e insertar son dos pasos separados — con escrituras
  * concurrentes hay una ventana de carrera teórica. Aceptable para un log de
- * auditoría de escritura poco frecuente (acciones de admin/gestor).
+ * auditoría de escritura poco frecuente (acciones de admin/administrativo).
  */
 export async function logAudit(c: Context, params: LogParams): Promise<void> {
   try {

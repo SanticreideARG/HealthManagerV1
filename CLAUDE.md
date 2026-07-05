@@ -1,14 +1,18 @@
-# Suites Manager — Contexto para agentes
+# Turnos Manager — Contexto para agentes
 
-Gestor para hoteles, alojamientos y cabañas: habitaciones, reservas, calendario de
-ocupación, check-in/out y facturación mínima. Mercado Argentina (AFIP en fases futuras).
+Gestor de turnos para clínicas, consultorios y profesionales médicos / de otras
+disciplinas. Cada profesional gestiona sus **ventanas de trabajo** (franjas horarias) y
+sobre ellas se ofrecen turnos. **Sin pagos**: el sistema reserva y coordina, no factura.
+Mercado Argentina.
 
 > Este archivo es el contexto compartido del proyecto. Mantenelo actualizado cuando
-> cambien decisiones, comandos, o el estado del deploy.
+> cambien decisiones, comandos o el estado del deploy. Reciclado de **Suites Manager**
+> (gestor hotelero): se reusó el stack, la arquitectura serverless y —sobre todo— la
+> validación anti-solapamiento a nivel base de datos.
 
 ## Stack y arquitectura
 
-Monorepo **pnpm workspaces**:
+Monorepo **pnpm workspaces** (NO es Laravel/TALL — es TypeScript de punta a punta):
 
 ```
 apps/
@@ -19,216 +23,241 @@ packages/
   shared/  → esquemas Zod y tipos compartidos front ↔ back
 ```
 
-- **DB**: PostgreSQL en **Neon** (gestionado vía Vercel). NO es Turso: se evaluó y se
-  descartó porque SQLite no soporta el constraint anti-overbooking (ver abajo).
+- Workspaces: `@turnos/web`, `@turnos/api` (o su nombre en `apps/`), `@turnos/db`,
+  `@turnos/shared`.
+- **DB**: PostgreSQL en **Neon** (gestionado vía Vercel). Postgres es obligatorio (no
+  SQLite/Turso): SQLite no soporta el constraint anti-solapamiento (ver abajo).
 - **Estado en el front**: TanStack Query = estado de servidor; Zustand = estado de UI.
   No mezclar.
+- **Requisito rígido: todo serverless.** Nada de containers persistentes (ver
+  Recordatorios, Fase 3).
 
 ## ⭐ Decisión de diseño clave: anti-overbooking en la DB
 
-El solapamiento de reservas se previene **a nivel base de datos**, no en código:
+Igual que en Suites, el solapamiento se previene **a nivel base de datos**, no en código.
+El cambio de dominio: se bloquea por **profesional** (no habitación) y en granularidad
+**horaria** (`tstzrange`, no `daterange`).
 
 ```sql
-ALTER TABLE reservas ADD CONSTRAINT reservas_sin_solapamiento
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+ALTER TABLE turnos
+  ADD CONSTRAINT turnos_sin_solapamiento
   EXCLUDE USING gist (
-    habitacion_id WITH =,
-    daterange(checkin, checkout, '[)') WITH &&
-  ) WHERE (estado <> 'cancelada');
+    profesional_id WITH =,
+    tstzrange(inicio, fin, '[)') WITH &&
+  ) WHERE (estado <> 'cancelado' AND NOT es_sobreturno);
 ```
 
-- Requiere la extensión `btree_gist` (Neon la soporta).
-- El rango `[)` incluye check-in y excluye check-out → checkout y check-in el mismo día
-  NO chocan.
+- Requiere `btree_gist` (Neon lo soporta).
+- El rango `[)` incluye el inicio y excluye el fin → un turno que termina 10:00 y otro
+  que arranca 10:00 **no** chocan.
 - La API traduce la violación (código PG `23P01`) a un **HTTP 409 `overbooking`**.
-- El estado de ocupación se DERIVA de las reservas; no se duplica.
+- **Sobreturnos**: `es_sobreturno = true` sale del constraint a propósito → puede pisar
+  a otros. Solo lo pueden emitir `profesional`/`administrativo`; el flujo online del
+  paciente **nunca** lo setea → el paciente no puede generar solapamientos.
+- **Bloqueos de agenda** (ausencia, feriado, reunión) son turnos sin paciente, estado
+  `bloqueo`. Participan del constraint (estado <> cancelado, no sobreturno) → nada se
+  agenda encima.
+
+### ⚠️ El constraint previene *solapamiento*, no *contención*
+
+El EXCLUDE garantiza que dos turnos no se pisen, pero **no** valida que un turno caiga
+*dentro* de una ventana de trabajo. Eso es regla de negocio a nivel aplicación (chequear
+contra la ventana antes de insertar). El constraint es el backstop contra condiciones de
+carrera, no la única validación.
+
+## Concepto central: ventanas de trabajo
+
+Lo único que el proyecto hotelero no tenía. Cada profesional define su disponibilidad
+como franjas recurrentes + excepciones. La disponibilidad ofrecida se **calcula**; no se
+materializan slots.
+
+- **`ventanas_recurrentes`**: `profesional_id`, `dia_semana`, `hora_inicio`, `hora_fin`,
+  `duracion_turno` (nullable → fallback), `modo_confirmacion` (nullable → fallback),
+  `vigencia_desde`, `vigencia_hasta` (nullable), `activa`.
+- **`ventanas_excepciones`**: `profesional_id`, `fecha`, `tipo` (`agrega` | `bloquea`),
+  `hora_inicio`/`hora_fin` (nullable = día completo), `motivo`.
+
+### Cálculo de disponibilidad (reemplaza `/disponibilidad`)
+
+Dado profesional + fecha (o rango):
+1. Expandir ventanas recurrentes de esa fecha (match `dia_semana` + dentro de vigencia).
+2. Aplicar excepciones: sumar las `agrega`, restar las `bloquea`.
+3. **Restar** los turnos no cancelados (rangos ocupados).
+4. Trocear los rangos libres en slots de `duracion_turno`.
+5. Devolver los slots libres.
+
+Es aritmética de rangos pura (capa app). La **duración/segmentación no toca la BD**: el
+turno guarda `inicio`/`fin` concretos y el constraint opera sobre el rango real, agnóstico
+a cómo se segmentó. Cambiar la duración de una ventana no reescribe turnos existentes.
+
+### Duración y modo de confirmación (resolución en cascada)
+
+- **Duración**: presets 20/30/40/60 min, editables. Orden de fallback:
+  `ventana.duracion_turno` → `profesional.duracion_turno_default` → `config.duracion_default`.
+- **Modo de confirmación** (`automatico` | `aprobacion`): mismo orden de fallback.
+  Turno creado online hereda el modo de la ventana: `automatico → confirmado`,
+  `aprobacion → solicitado`. Staff siempre crea `confirmado`.
+
+## Modelo de datos (tablas núcleo)
+
+| Tabla | Rol |
+|---|---|
+| `profesionales` | recurso reservable **+** usuario opcional. `auth_user_id` **nullable** (recepción puede agendar a quien no loguea). Campos: `especialidad`, `duracion_turno_default`, `modo_confirmacion_default`, `ubicacion` (informativa), `color` (agenda), `activo`. |
+| `pacientes` | (era `huespedes`). `documento`, `tipo_documento`, `fecha_nacimiento`, `email`, `telefono`, `obra_social_id` (nullable), `nro_afiliado`, `notas`, `auth_user_id` (nullable si se auto-registró). |
+| `obras_sociales` | catálogo. |
+| `profesional_obras_sociales` | M2M: qué OS acepta cada profesional. |
+| `ventanas_recurrentes` | disponibilidad recurrente (ver arriba). |
+| `ventanas_excepciones` | altas/bloqueos puntuales por fecha. |
+| `turnos` | (era `reservas`). Núcleo + EXCLUDE. Columnas clave: `profesional_id`, `paciente_id` (nullable), `inicio`/`fin` (timestamptz), `estado`, `es_sobreturno`, `es_particular`, `origen` (`online`|`administrativo`), `notas`, `confirmado_at`, `arribo_at`, `atendido_at`. `CHECK (fin > inicio)`. |
+| `config_clinica` | (era config alojamiento) + defaults globales (`duracion_default`, `modo_confirmacion_default`). |
+| `audit_log` | trazabilidad con hash encadenado (reciclado, clave en salud). |
+| `auth_user/session/account/verification` | Better Auth. |
+| `landing_*` | hero, fotos, links, servicios, contactos (reciclado). |
+
+### Estados del turno
+
+`solicitado → confirmado → en_sala → atendido`, más `ausente` (no-show), `cancelado`
+y `bloqueo` (agenda sin paciente). El EXCLUDE excluye solo `cancelado` y `es_sobreturno`.
+
+### Obra social
+
+Al agendar, el paciente indica su OS. Si **no** está entre las compatibles del
+profesional → `es_particular = true` + aviso no bloqueante ("el turno será particular,
+los costos corren por tu cuenta") con conformidad. Sin procesamiento de pago.
+
+## Roles y permisos
+
+Campo `role` en `auth_user` (default `paciente`):
+
+- **`admin`** — todo (config, ABM profesionales, obras sociales, reportes, landing).
+- **`profesional`** — gestiona **sus** ventanas y su agenda; puede emitir sobreturnos.
+- **`administrativo`** — ve disponibilidad, da de alta turnos y pacientes, baja la lista
+  de pacientes del día, emite sobreturnos, confirma solicitados. No toca config global.
+- **`paciente`** — portal: reserva online, ve/cancela sus turnos. Nunca sobreturnos.
+
+Middleware análogo al de Suites: `requireRole(...roles)`; `staff = admin|administrativo`;
+`profesionalOrStaff`; `adminOnly`. Un `profesional` es **recurso y usuario** a la vez.
 
 ## Comandos
 
 ```bash
 pnpm install
-pnpm db:migrate      # aplica packages/db/migrations/*.sql (runner propio, no drizzle-kit)
-pnpm db:seed         # 5 habitaciones de ejemplo
-pnpm dev             # web (:5180) + api (:3001) en paralelo
-pnpm dev:api         # solo API
-pnpm dev:web         # solo web
+pnpm db:migrate      # aplica packages/db/migrations/*.sql (runner propio)
+pnpm db:seed         # datos de ejemplo (profesionales, ventanas, obras sociales)
+pnpm dev             # web + api en paralelo
+pnpm dev:api / dev:web
 pnpm dev:mock        # web con datos en memoria, SIN DB (VITE_MOCK=1)
 pnpm typecheck       # tsc --noEmit en los 4 workspaces
-pnpm test            # vitest (unit) — apps/api (lógica de tarifas)
-pnpm --filter @suites/web build
+pnpm test            # vitest (unit) — lógica de disponibilidad
 ```
 
-## Base de datos
+## Base de datos (reciclado de Suites — aplica igual)
 
 - **Migraciones**: runner propio en `packages/db/src/migrate.ts` (NO drizzle-kit para el
-  DDL, porque el `EXCLUDE` va en SQL crudo). Aplica los `.sql` de `packages/db/migrations`
-  en orden y registra en la tabla `_migrations`. Usa `pg` + `DATABASE_URL_UNPOOLED`.
-- **Runtime**: `packages/db/src/index.ts` usa el driver **HTTP de Neon**
-  (`neon()` + `drizzle-orm/neon-http`). Usa `fetch` nativo, sin WebSocket → no
-  crashea en las funciones de Vercel. **No uses el driver WebSocket
-  (`neon-serverless` + `ws`)**: anda local pero crasheaba la función en Vercel.
-  - **Versión clave**: `@neondatabase/serverless` fijado en **0.10.x**. La v1.x
-    cambió la API y rompe con `drizzle-orm` 0.38 (error "can now be called only
-    as a tagged-template").
-  - El driver HTTP **no tiene transacciones interactivas**. La única operación
-    transaccional (alta de reserva: huésped + reserva) se hace con **UNA
-    sentencia CTE** (`WITH nuevo_huesped AS (INSERT ... RETURNING id) INSERT INTO
-    reservas SELECT ... FROM nuevo_huesped`), que es atómica y dispara igual el
-    `EXCLUDE` → 409 si hay overbooking. Ver `apps/api/src/routes/reservas.ts`.
-  - `packages/db/src/index.ts` exporta `sql` (el tagged-template de neon) para esa
-    sentencia.
-- **Schema Drizzle** (`packages/db/src/schema.ts`) es la fuente de tipos para queries.
-  El `EXCLUDE` vive solo en el SQL (Drizzle no lo expresa); mantener ambos en sync.
-- **Env**: `.env` en la RAÍZ del repo (gitignored). `packages/db/src/load-env.ts` lo
-  carga apunte donde apunte el cwd. Variables: `DATABASE_URL` (pooled, runtime) y
-  `DATABASE_URL_UNPOOLED` (directa, migraciones). En Vercel las inyecta la integración
-  de Neon (no hay `.env`).
+  DDL, porque el `EXCLUDE` va en SQL crudo). Aplica los `.sql` en orden y registra en
+  `_migrations`. Usa `pg` + `DATABASE_URL_UNPOOLED`.
+- **Runtime**: `packages/db/src/index.ts` usa el driver **HTTP de Neon** (`neon()` +
+  `drizzle-orm/neon-http`). Fetch nativo, sin WebSocket → no crashea en Vercel. **No** usar
+  el driver WebSocket (`neon-serverless` + `ws`).
+  - Fijar `@neondatabase/serverless` en **0.10.x** (la v1.x rompe con drizzle-orm 0.38).
+  - El driver HTTP **no tiene transacciones interactivas**. El alta de turno con paciente
+    nuevo (huésped + reserva en Suites) se hace con **una sola sentencia CTE**
+    (`WITH nuevo_paciente AS (INSERT ... RETURNING id) INSERT INTO turnos SELECT ...`),
+    atómica, que dispara igual el `EXCLUDE` → 409 si hay solapamiento.
+  - `index.ts` exporta `sql` (tagged-template de neon) para esa sentencia.
+- **Schema Drizzle** (`packages/db/src/schema.ts`) es la fuente de tipos. El `EXCLUDE`
+  vive solo en el SQL de la migración `0000`; mantener ambos en sync.
+- **Env**: `.env` en la RAÍZ (gitignored). `DATABASE_URL` (pooled, runtime) y
+  `DATABASE_URL_UNPOOLED` (directa, migraciones). En Vercel las inyecta la integración de
+  Neon.
 
-## ⚠️ Gotcha: degradación de tipos de Drizzle en builds
+### ⚠️ Gotcha: degradación de tipos de Drizzle en builds
 
-En algunos entornos de build (notablemente el `tsc` de Vercel sin nuestro
-`skipLibCheck`), la inferencia de tipos de Drizzle **se degrada**: el tipo de una tabla
-pierde columnas (las opcionales/con default) e incluso `$inferInsert` queda roto. Esto
-NO pasa en el typecheck local.
+En el `tsc` de Vercel (sin `skipLibCheck`) la inferencia de Drizzle **se degrada** (tablas
+pierden columnas opcionales, `$inferInsert` roto). Reglas para queries de escritura:
+- En `.values()`/`.set()` nunca uses objeto literal con propiedades explícitas → usá
+  **variable** o **spread** (`{ ...data }`). El chequeo de "excess property" solo aplica a
+  literales.
+- Si la inferencia degradada no ve columnas requeridas, castear el payload con `as any`
+  (ya validado por Zod, es seguro).
+- `drizzle-orm` debe ser **una sola instancia**: solo `@turnos/db` lo declara como dep y
+  re-exporta los operadores; la API los importa desde `@turnos/db`, no desde `drizzle-orm`.
 
-Reglas para escribir queries de escritura sin romper builds:
-- En `.values()` / `.set()` **nunca uses un objeto literal con propiedades explícitas**
-  → usá una **variable** o **spread** (`{ ...data }`). El chequeo de "excess property"
-  solo aplica a literales.
-- Si el insert exige columnas que la inferencia degradada no ve (ej. habitaciones),
-  castear el payload con **`as any`** en la llamada (el payload ya está validado por Zod,
-  así que es seguro). Ver `apps/api/src/routes/habitaciones.ts`.
-- `drizzle-orm` debe ser **una sola instancia**: solo `@suites/db` lo declara como dep y
-  re-exporta los operadores (`eq`, `and`, etc.); la API los importa desde `@suites/db`,
-  NO desde `drizzle-orm`.
+## Deploy en Vercel (DOS proyectos, mismo repo, Root Directory distinto)
 
-## Deploy en Vercel (DOS proyectos)
-
-Ambos apuntan al mismo repo, con Root Directory distinto.
-
-### API — proyecto con Root Directory = `apps/api`
-Se despliega con la **Build Output API de Vercel** (`.vercel/output/`). Es la forma sin
-ambigüedad: el build declara explícitamente la función y las rutas, y Vercel despliega
-eso tal cual (no depende de autodetectar `api/`, ni de hybrid estático-vs-función).
-
-Por qué NO los enfoques previos (todos fallaron, en orden):
-1. `@vercel/node` nativo sobre `api/index.ts` → `tsc` del preset degradaba tipos de
-   Drizzle (TS2353); además `@suites/db`/`@suites/shared` son TS sin compilar →
-   `ERR_MODULE_NOT_FOUND` en runtime.
-2. Bundle esbuild a `api/index.js` gitignoreado → Vercel no registraba la función
-   (no estaba en el árbol fuente) → el rewrite caía al `index.html` estático
-   (todas las rutas devolvían HTML, nunca JSON).
-
-Setup actual (FUNCIONA):
-- `apps/api/src/vercel-entry.ts`: handler Node vía `getRequestListener(app.fetch)`.
-- `apps/api/scripts/build-vercel.mjs` (corre en `pnpm build:vercel`): bundlea con esbuild
-  (autocontenido, inlinea workspace deps) y escribe `.vercel/output/`:
-  - `functions/api.func/index.js` + `package.json` (`type: module`) + `.vc-config.json`
-    (`runtime: nodejs20.x`, `launcherType: Nodejs`).
-  - `config.json` con `routes: [{ src: "/(.*)", dest: "/api" }]`.
-  - `static/index.html` (no se sirve; todo va a `/api`).
-- `apps/api/vercel.json`: solo `framework: null` + `buildCommand: pnpm build:vercel`.
-  (Sin `outputDirectory` ni `rewrites`: van en el Build Output.)
-- `.vercel/` está en `.gitignore` (artefacto de build).
-- `apps/api/src/app.ts` define la app; `apps/api/src/index.ts` es solo el server local.
-- Env: la integración de Neon inyecta `DATABASE_URL` y `DATABASE_URL_UNPOOLED`.
-  **Sin prefijo** de variable (el código lee los nombres estándar).
-
-### Web — proyecto con Root Directory = `apps/web`
-- Framework Preset = Vite.
-- Env `VITE_API_URL` = URL pública del proyecto API.
-
-## Modo mock / demo
-
-`pnpm dev:mock` corre la web con datos en memoria (`apps/web/src/lib/mockApi.ts`), sin DB
-ni backend. Útil para verificar UI. Muestra un banner ámbar. Replica las reglas clave
-(anti-overbooking y "no eliminar habitación con reservas").
+Idéntico a Suites. La **API** se despliega con la **Build Output API** (`.vercel/output/`):
+esbuild autocontenido que inlinea las deps de workspace y escribe
+`functions/api.func/` + `config.json` (rutas a `/api`). `vercel.json` solo con
+`framework: null` + `buildCommand`. La **Web** con preset Vite y env `VITE_API_URL`.
+No usar `@vercel/node` nativo (degrada tipos + `ERR_MODULE_NOT_FOUND` por TS sin compilar).
 
 ## Autenticación (Better Auth)
-- `better-auth@1.2.12` (zod 3). El root `package.json` tiene `pnpm.overrides.better-call=1.0.29`
-  para evitar el peer de zod 4 (el proyecto entero usa zod 3 — NO subir a zod 4 sin migrar todo).
-- Config en `apps/api/src/auth.ts` (drizzleAdapter sobre la `db` neon-http, emailAndPassword,
-  `basePath: "/auth"`, campo `role`). Handler montado en Hono bajo la ruta `/auth/...`.
-- Tablas `auth_user/auth_session/auth_account/auth_verification` (migración 0005). `role`:
-  `admin` | `gestor` | `cliente` (default `cliente`). Promover admin: `UPDATE auth_user SET role='admin' WHERE email=...`.
-- Env: `BETTER_AUTH_SECRET` + `BETTER_AUTH_URL` (en `.env` local; **agregarlos en el proyecto API de Vercel**).
-- neon-http alcanza para el flujo email/password (no requirió transacciones interactivas/pg).
-- ✅ Login en el front, gating por rol y **Google OAuth** ya implementados
-  (`socialProviders.google` en `auth.ts` + botón en `LoginModal.tsx`). Ver
-  detalle en `docs/roadmap.md` § Roles y permisos.
-- ✅ Re-autenticación antes de cambios sensibles: sección "Mi cuenta"
-  (`apps/web/src/features/auth/MiCuenta.tsx`). `changePassword` exige
-  `currentPassword` (nativo de Better Auth); cambiar email reverifica la
-  contraseña actual vía `signIn.email` antes de `changeEmail`; `deleteUser`
-  recibe `password` y Better Auth lo verifica server-side. Ambos
-  (`changeEmail`, `deleteUser`) están habilitados explícitamente en
-  `user: {...}` de `auth.ts` (antes no lo estaban).
+
+- `better-auth@1.2.12` (zod 3). Override `better-call=1.0.29` en el root para evitar el
+  peer de zod 4 (el proyecto usa zod 3 — no subir sin migrar todo).
+- Config en `apps/api/src/auth.ts`: `drizzleAdapter` sobre la `db` neon-http,
+  `emailAndPassword`, `socialProviders.google`, campo `role`
+  (`admin|profesional|administrativo|paciente`, default `paciente`). Handler en Hono bajo
+  `/api/auth/...`.
+- Promover: `UPDATE auth_user SET role='admin' WHERE email=...`.
+- Env: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID/SECRET` (agregarlos en
+  el proyecto API de Vercel). En prod (https, cross-site) las cookies necesitan
+  `SameSite=None; Secure`.
+- Reciclar la sección "Mi cuenta" (re-autenticación antes de cambiar password/email/borrar).
+
+## Recordatorios (Fase 3, serverless — NO containers)
+
+- **WhatsApp**: usar el **WhatsApp Cloud API oficial de Meta** (hosteado por Meta, solo
+  llamadas HTTP a la Graph API desde una función de Vercel). La API on-premise se
+  discontinuó (oct-2025) y Evolution API exige Docker/sesión persistente → descartado por
+  el requisito serverless. Recordatorio de turno = plantilla categoría *utility*. Costo
+  per-message desde jul-2025 (servicio entrante gratis, plantillas salientes se cobran).
+- **Mail**: Resend o Amazon SES (HTTP puro).
+
+## Diseño
+
+Ver `docs/manual-diseno.md`. Resumen: identidad sobria de salud AR, primario **teal
+profundo** (`#0E5A6B`), papel cálido-frío, verde semántico (`#2E8C79`) para
+disponible/confirmado, terracota (`#B8482A`) **solo** para alertas. Tipografía
+**Source Serif 4** (display) + **Public Sans** (UI/cuerpo). Elemento signature: el **chip
+de horario**. Flujo de reserva en ≤4 pasos. Accesibilidad AA no negociable (cuerpo ≥16px,
+estado nunca solo por color, foco visible, toque ≥44px). Filtro por especialidad en la
+landing (conviven disciplinas).
+
+## Qué se recicló y qué se eliminó de Suites Manager
+
+- **Reciclado**: monorepo + stack, EXCLUDE anti-solapamiento (adaptado), CTE atómico +
+  409, Better Auth + Google OAuth + roles + "Mi cuenta", audit log con hash encadenado,
+  landing pública + admin de landing, export Excel/PDF (→ "lista de pacientes del día"),
+  modo mock, deploy dual en Vercel, gotchas de Drizzle/Neon.
+- **Eliminado**: todo el módulo de pagos (`pagos`, `metodos_pago`, `impuestos`,
+  facturación), tarifas dinámicas + `tarifaCalc`, `consumos`/`servicios`, housekeeping,
+  amenidades, `capacidad`, y el cargo monetario por cancelación (la cancelación queda,
+  sin dinero; se trackea anticipación y ausentismo).
 
 ## Convenciones de Git
 
-- Repo: https://github.com/SanticreideARG/Suites-Manager-V1 (`origin`, rama `main`).
-- **Hacer commit en cada cambio importante.** Mensajes en español.
-- Identidad de commits de este repo: `SanticreideARG <santi.creide@gmail.com>`
-  (configurada como git config LOCAL del repo).
-- `.env` NUNCA se commitea (está en `.gitignore`).
-
-## Estado actual (al día)
-
-> Snapshot revisado 2026-07-01 contra el código real (19 migraciones,
-> `0000` a `0018`; las últimas tres — `0016_cargos_categorias`,
-> `0017_audit_log_hash`, `0018_politicas_cancelacion` — **no corrieron aún
-> contra Neon**, hay que `pnpm db:migrate`). El detalle ítem por ítem vive en
-> `docs/roadmap.md` (mantenido como fuente de verdad de feature-status); esta
-> sección es un resumen de alto nivel, no la duplica.
-
-**Funciona y verificado (más allá del MVP original):**
-- MVP completo (habitaciones, reservas, planner, check-in/out, comprobante PDF,
-  export Excel), desplegado en Vercel (web + API serverless).
-- Auth completa: Better Auth con email/password **y Google OAuth**, roles
-  admin/gestor/cliente con gating por ruta, gestión de usuarios, y
-  **re-autenticación** para cambiar password/email/borrar cuenta ("Mi cuenta").
-- Huéspedes Fase A (tipo/número de documento, nacionalidad, fecha de
-  nacimiento, sección "alojados ahora" vs histórico), cargos/consumos extra
-  sobre la reserva (catálogo `servicios` + tabla `consumos`) con **4
-  categorías fijas** (Servicios/Consumos/Cargos/Bonificaciones — Bonificaciones
-  resta del total) y CRUD del catálogo en la pestaña Tarifas.
-- Tarifas dinámicas: reglas por coeficiente **o** monto fijo (excluyente entre
-  sí, con validación en la API) + edición de precio base por habitación, todo
-  centralizado en la pestaña Tarifas.
-- Amenidades (catálogo + asignación por unidad), fotos de alojamiento y logo
-  vía Vercel Blob.
-- Landing pública con disponibilidad en tiempo real + panel de administración
-  de landing (hero, fotos, links de footer, servicios, contactos).
-- Reportes ampliados (comparativa mensual/anual, forecast, gráficos, export
-  PDF/Excel), módulo de Pagos completo (DB+API+UI en el modal de reserva),
-  Housekeeping completo.
-- Audit log con **hash encadenado** (sha256, tamper-evident) + endpoint
-  `GET /audit-log/verify` y botón "Verificar integridad" en Actividad.
-- Cancelación de reservas: pide confirmación (panel inline, no cancela
-  directo), bloquea si hay check-in + cargos asociados (409
-  `cancelacion_bloqueada`), y aplica cargo % configurable según anticipación
-  (Configuración → "Cancelaciones") como un cargo más (categoría `cargos`).
-
-**Pendiente / gaps reales (ver `docs/roadmap.md` para detalle):**
-- **Correr las migraciones 0016, 0017 y 0018 contra Neon** (`pnpm db:migrate`)
-  antes de desplegar — el código de esta sesión asume que ya corrieron.
-- Reservas online desde la landing pública (hoy solo se puede consultar
-  disponibilidad; crear una reserva sigue restringido a `staff`).
-- Ficha de huésped Fase B (dirección, estado civil, motivo de viaje, info de
-  pago, vehículo, preferencias, acompañantes, foto de documento).
-- Playwright, Sentry/Uptime Kuma, MercadoPago.
-- **Drift de entorno detectado (no relacionado a esta sesión)**: `pnpm
-  typecheck` falla en `packages/db` (src/reseed.ts) y `apps/api` (`auth.ts`
-  google types, varios `'row' is possibly undefined` en rutas no tocadas acá)
-  incluso en un checkout limpio — parece un desfasaje entre la versión de
-  TypeScript resuelta ahora (5.9.3) y la que se usó al escribir ese código.
-  No introducido por los cambios de esta sesión (verificado con `git stash`),
-  pero conviene revisarlo aparte.
+- **Commit en cada cambio importante.** Mensajes en español.
+- Identidad de commits: `SanticreideARG <santi.creide@gmail.com>` (git config LOCAL del repo).
+- `.env` NUNCA se commitea.
 
 ## Roadmap
 
-- **MVP v1.0** (casi listo): habitaciones, reservas, planner, check-in/out, facturación
-  mínima.
-- **Fase 2**: huéspedes (ficha + historial), tarifas dinámicas, reportes, roles
-  (admin/recepcionista) con Better Auth.
-- **Fase 3**: channel manager (Booking/Airbnb), housekeeping, notificaciones
-  (Resend/WhatsApp), AFIP, multi-sucursal.
+- **Fase 0 — Fork & purga**: renombrar workspaces a `@turnos/*`, migración `0000` limpia
+  con el EXCLUDE en `tstzrange` + sobreturno, borrar módulos de pago/tarifas/housekeeping.
+- **Fase 1 — MVP turnos**: CRUD profesionales · ventanas recurrentes + excepciones · alta
+  de turno (CTE→409) · agenda día/semana por profesional · cálculo de disponibilidad ·
+  estados (confirmar/arribo/atendido/ausente/cancelar) · lista de pacientes del día +
+  export · obras sociales · roles.
+- **Fase 2 — Portal paciente**: landing clínica · registro OAuth/email · reserva
+  self-service (especialidad→profesional→fecha→slot) · "Mis turnos" (ver/cancelar) ·
+  confirmación de solicitados por administrativo.
+- **Fase 3 — Operación**: recordatorios WhatsApp Cloud API/email (serverless) · lista de
+  espera · reportes de ausentismo · notas clínicas mínimas por turno · multi-sede.
+
+## Estado actual
+
+> Greenfield. Nada implementado todavía. Próximo paso: migración `0000` (schema completo
+> + EXCLUDE) y esqueleto del monorepo. Este archivo describe el destino, no lo hecho.

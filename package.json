@@ -1,23 +1,22 @@
 {
-  "name": "suites-manager",
+  "name": "turnos-manager",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "pnpm -r --parallel dev",
-    "dev:web": "pnpm --filter @suites/web dev",
-    "dev:api": "pnpm --filter @suites/api dev",
+    "dev:web": "pnpm --filter @turnos/web dev",
+    "dev:api": "pnpm --filter @turnos/api dev",
     "build": "pnpm -r build",
-    "db:generate": "pnpm --filter @suites/db generate",
-    "db:migrate": "pnpm --filter @suites/db migrate",
-    "db:seed": "pnpm --filter @suites/db seed",
-    "db:reseed": "pnpm --filter @suites/db exec tsx src/reseed.ts",
-    "db:promote": "pnpm --filter @suites/db exec tsx src/promote.ts",
-    "db:push": "pnpm --filter @suites/db push",
-    "db:studio": "pnpm --filter @suites/db studio",
+    "db:generate": "pnpm --filter @turnos/db generate",
+    "db:migrate": "pnpm --filter @turnos/db migrate",
+    "db:seed": "pnpm --filter @turnos/db seed",
+    "db:promote": "pnpm --filter @turnos/db exec tsx src/promote.ts",
+    "db:push": "pnpm --filter @turnos/db push",
+    "db:studio": "pnpm --filter @turnos/db studio",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @suites/api test"
+    "test": "pnpm --filter @turnos/api test"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

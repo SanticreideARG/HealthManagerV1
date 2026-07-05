@@ -2,25 +2,15 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, usandoMock } from "./lib/api.js";
-import type { ReservaListItem } from "./lib/api.js";
-import { addDays } from "./lib/fechas.js";
 import { useUi } from "./store/ui.js";
-import { Planner } from "./components/Planner.js";
-import { NuevaReserva } from "./features/reservas/NuevaReserva.js";
-import { AccionesReserva } from "./features/reservas/AccionesReserva.js";
-import { HuespedesPage } from "./features/huespedes/HuespedesPage.js";
-import { ReportesPage } from "./features/reportes/ReportesPage.js";
-import { TarifasPage } from "./features/tarifas/TarifasPage.js";
-import { ProximosPanel } from "./features/dashboard/ProximosPanel.js";
 import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
 import { LandingManagerPage } from "./features/landing-manager/LandingManagerPage.js";
-import { HousekeepingPage } from "./features/housekeeping/HousekeepingPage.js";
 import { ActividadPage } from "./features/actividad/ActividadPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import { MiCuenta } from "./features/auth/MiCuenta.js";
 import logo from "./assets/suites-man-logo.png";
 
-type Vista = "calendario" | "huespedes" | "housekeeping" | "reportes" | "tarifas" | "landing" | "config" | "actividad";
+type Vista = "agenda" | "pacientes" | "profesionales" | "landing" | "config" | "actividad";
 
 interface NavDef {
   id: Vista;
@@ -35,12 +25,12 @@ interface NavGroup {
 }
 
 export function PanelApp() {
-  const [vista, setVista] = useState<Vista>("calendario");
+  const [vista, setVista] = useState<Vista>("agenda");
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
   const { tema, toggleTema } = useUi();
   const { data: session, isPending } = useSession();
   const configQ = useQuery({ queryKey: ["config"], queryFn: api.config.get });
-  const appNombre = configQ.data?.nombre ?? "Suites Manager";
+  const appNombre = configQ.data?.nombre ?? "Turnos Manager";
 
   const requiereAuth = !usandoMock;
 
@@ -59,11 +49,11 @@ export function PanelApp() {
 
   const role = usandoMock
     ? "admin"
-    : ((session?.user as { role?: string } | undefined)?.role ?? "gestor");
+    : ((session?.user as { role?: string } | undefined)?.role ?? "paciente");
   const esAdmin = role === "admin";
 
-  // Cliente → no tiene acceso al panel, lo mandamos a la landing
-  if (requiereAuth && role === "cliente") {
+  // Paciente → no tiene acceso al panel, lo mandamos a la landing
+  if (requiereAuth && role === "paciente") {
     return <Navigate to="/" replace />;
   }
 
@@ -166,11 +156,9 @@ export function PanelApp() {
           {allItems.find((n) => n.id === vista)?.label}
         </h1>
 
-        {vista === "calendario" && <CalendarioView />}
-        {vista === "huespedes" && <HuespedesPage />}
-        {vista === "reportes" && esAdmin && <ReportesPage />}
-        {vista === "housekeeping" && <HousekeepingPage />}
-        {vista === "tarifas" && esAdmin && <TarifasPage />}
+        {vista === "agenda" && <Proximamente texto="Agenda por profesional — Fase 1." />}
+        {vista === "pacientes" && <Proximamente texto="Ficha y listado de pacientes — Fase 1." />}
+        {vista === "profesionales" && <Proximamente texto="ABM de profesionales y ventanas de trabajo — Fase 1." />}
         {vista === "landing" && esAdmin && <LandingManagerPage />}
         {vista === "actividad" && esAdmin && <ActividadPage />}
         {vista === "config" && esAdmin && <ConfiguracionPage />}
@@ -181,13 +169,21 @@ export function PanelApp() {
   );
 }
 
+function Proximamente({ texto }: { texto: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+      {texto}
+    </div>
+  );
+}
+
 function Brand({ nombre }: { nombre: string }) {
   return (
     <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
       <img src={logo} alt="" className="h-10 w-10 rounded-xl" />
       <div className="leading-tight">
         <div className="font-bold text-slate-800">{nombre}</div>
-        <div className="text-xs text-slate-400">Gestión de hoteles</div>
+        <div className="text-xs text-slate-400">Gestión de turnos</div>
       </div>
     </div>
   );
@@ -293,160 +289,6 @@ function IconBtn({
   );
 }
 
-function CalendarioView() {
-  const { fechaAncla, diasVisibles, avanzar, setFechaAncla, verMes, verQuincena } =
-    useUi();
-  const hasta = addDays(fechaAncla, diasVisibles);
-
-  const habitacionesQ = useQuery({
-    queryKey: ["habitaciones"],
-    queryFn: api.habitaciones.list,
-  });
-  const reservasQ = useQuery({
-    queryKey: ["reservas", fechaAncla, diasVisibles],
-    queryFn: () => api.reservas.list(fechaAncla, hasta),
-  });
-
-  const [nuevaReserva, setNuevaReserva] = useState<{
-    habitacionId: number;
-    fecha: string;
-  } | null>(null);
-  const [reservaSel, setReservaSel] = useState<ReservaListItem | null>(null);
-  const [exportando, setExportando] = useState(false);
-
-  return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1">
-          <button onClick={() => avanzar(-diasVisibles)} className="btn btn-ghost btn-sm">
-            ← Anterior
-          </button>
-          <button
-            onClick={() => setFechaAncla(new Date().toISOString().slice(0, 10))}
-            className="btn btn-ghost btn-sm"
-          >
-            Hoy
-          </button>
-          <button onClick={() => avanzar(diasVisibles)} className="btn btn-ghost btn-sm">
-            Siguiente →
-          </button>
-        </div>
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-0.5 text-xs">
-          <button
-            onClick={verQuincena}
-            className={`rounded px-2.5 py-1 font-medium transition ${
-              diasVisibles === 14 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
-            }`}
-          >
-            Quincena
-          </button>
-          <button
-            onClick={verMes}
-            className={`rounded px-2.5 py-1 font-medium transition ${
-              diasVisibles > 14 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
-            }`}
-          >
-            Mes
-          </button>
-        </div>
-        <span className="text-sm text-slate-400">
-          {fechaAncla} → {hasta}
-        </span>
-
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            disabled={exportando || !habitacionesQ.data}
-            onClick={async () => {
-              setExportando(true);
-              try {
-                const { exportarExcel } = await import(
-                  "./features/reportes/exportarExcel.js"
-                );
-                await exportarExcel({
-                  reservas: reservasQ.data ?? [],
-                  habitaciones: habitacionesQ.data ?? [],
-                  desde: fechaAncla,
-                  hasta,
-                });
-              } finally {
-                setExportando(false);
-              }
-            }}
-            className="btn btn-ghost btn-sm"
-          >
-            {exportando ? "Exportando…" : "⬇ Excel"}
-          </button>
-        </div>
-      </div>
-
-      <Leyenda />
-
-      {(habitacionesQ.isLoading || reservasQ.isLoading) && (
-        <p className="mt-3 text-sm text-slate-400">Cargando…</p>
-      )}
-      {habitacionesQ.isError && (
-        <p className="mt-3 text-sm text-rose-600">
-          No se pudo conectar con la API. ¿Está corriendo en :3001?
-        </p>
-      )}
-
-      {habitacionesQ.data && (
-        <div className="mt-3">
-          <Planner
-            habitaciones={habitacionesQ.data}
-            reservas={reservasQ.data ?? []}
-            ancla={fechaAncla}
-            dias={diasVisibles}
-            onClickCelda={(habitacionId, fecha) =>
-              setNuevaReserva({ habitacionId, fecha })
-            }
-            onClickReserva={(r) => setReservaSel(r)}
-          />
-        </div>
-      )}
-
-      {habitacionesQ.data && <ProximosPanel />}
-
-      {nuevaReserva && (
-        <NuevaReserva
-          habitacionId={nuevaReserva.habitacionId}
-          fechaInicial={nuevaReserva.fecha}
-          onClose={() => setNuevaReserva(null)}
-        />
-      )}
-      {reservaSel && (
-        <AccionesReserva
-          reserva={reservaSel}
-          habitacionNombre={
-            habitacionesQ.data?.find((h) => h.id === reservaSel.habitacionId)
-              ?.nombre ?? "—"
-          }
-          onClose={() => setReservaSel(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function Leyenda() {
-  const items = [
-    ["bg-amber-400", "Reservada"],
-    ["bg-emerald-500", "Ocupada"],
-    ["bg-slate-400", "Check-out"],
-    ["bg-rose-500", "Mantenimiento"],
-  ] as const;
-  return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-      {items.map(([color, label]) => (
-        <span key={label} className="flex items-center gap-1.5">
-          <span className={`inline-block h-3 w-3 rounded ${color}`} />
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 /* ── Íconos inline (sin dependencias) ── */
 const svgProps = {
   width: 18,
@@ -471,17 +313,11 @@ const iconUsers = (
     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
-const iconChart = (
+const iconStethoscope = (
   <svg {...svgProps}>
-    <path d="M3 3v18h18" />
-    <rect x="7" y="11" width="3" height="6" />
-    <rect x="13" y="7" width="3" height="10" />
-  </svg>
-);
-const iconTag = (
-  <svg {...svgProps}>
-    <path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.82 8.82a2 2 0 0 0 2.82 0l7.17-7.17a2 2 0 0 0 0-2.82Z" />
-    <circle cx="7.5" cy="7.5" r="1.5" />
+    <path d="M4.5 3v6a4.5 4.5 0 0 0 9 0V3" />
+    <path d="M9 21a4.5 4.5 0 0 0 4.5-4.5V12" />
+    <circle cx="18.5" cy="7.5" r="1.5" />
   </svg>
 );
 const iconSettings = (
@@ -511,24 +347,13 @@ const iconActivity = (
   </svg>
 );
 
-const iconBroom = (
-  <svg {...svgProps}>
-    <path d="M9 4L5 20" strokeLinecap="round"/>
-    <path d="M5 20h8" strokeLinecap="round"/>
-    <path d="M9 4c0 0 6 2 8 8" strokeLinecap="round"/>
-    <path d="M13 20c0-4 4-8 4-8" strokeLinecap="round"/>
-  </svg>
-);
-
 const NAV_MAIN: NavDef[] = [
-  { id: "calendario",   label: "Calendario",   icon: iconCalendar },
-  { id: "huespedes",    label: "Huéspedes",    icon: iconUsers },
-  { id: "housekeeping", label: "Housekeeping", icon: iconBroom },
+  { id: "agenda",        label: "Agenda",        icon: iconCalendar },
+  { id: "pacientes",     label: "Pacientes",     icon: iconUsers },
+  { id: "profesionales", label: "Profesionales", icon: iconStethoscope },
 ];
 
 const NAV_ADMIN: NavDef[] = [
-  { id: "reportes",  label: "Reportes",       icon: iconChart,    soloAdmin: true },
-  { id: "tarifas",   label: "Tarifas",        icon: iconTag,      soloAdmin: true },
   { id: "landing",   label: "Landing",        icon: iconLanding,  soloAdmin: true },
   { id: "actividad", label: "Actividad",      icon: iconActivity, soloAdmin: true },
   { id: "config",    label: "Configuración",  icon: iconSettings, soloAdmin: true },

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { db, authUser, desc, eq } from "@suites/db";
+import { db, authUser, desc, eq } from "@turnos/db";
 import { adminOnly } from "../middleware/auth.js";
 import { auth } from "../auth.js";
 import { logAudit } from "../lib/audit.js";
@@ -10,7 +10,7 @@ import { logAudit } from "../lib/audit.js";
 export const usuariosRoutes = new Hono();
 usuariosRoutes.use("*", adminOnly);
 
-const rolUpdate = z.object({ role: z.enum(["admin", "gestor", "cliente"]) });
+const rolUpdate = z.object({ role: z.enum(["admin", "profesional", "administrativo", "paciente"]) });
 
 usuariosRoutes.get("/", async (c) => {
   const rows = await db

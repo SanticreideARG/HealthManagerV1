@@ -1,22 +1,51 @@
-import { db, habitaciones } from "./index.js";
+import { db, profesionales, obrasSociales, profesionalObrasSociales, ventanasRecurrentes } from "./index.js";
 
-/** Carga unas habitaciones de ejemplo para probar el planner. */
+/** Carga profesionales, obras sociales y ventanas de ejemplo para probar la agenda. */
 async function main() {
-  const existentes = await db.select().from(habitaciones);
+  const existentes = await db.select().from(profesionales);
   if (existentes.length > 0) {
-    console.log(`Ya hay ${existentes.length} habitaciones, no hago seed.`);
+    console.log(`Ya hay ${existentes.length} profesionales, no hago seed.`);
     process.exit(0);
   }
 
-  await db.insert(habitaciones).values([
-    { nombre: "Cabaña 1", tipo: "Cabaña", capacidad: 4, tarifaBase: "45000" },
-    { nombre: "Cabaña 2", tipo: "Cabaña", capacidad: 4, tarifaBase: "45000" },
-    { nombre: "Suite Río", tipo: "Suite", capacidad: 2, tarifaBase: "60000" },
-    { nombre: "Hab. 101", tipo: "Standard", capacidad: 2, tarifaBase: "30000" },
-    { nombre: "Hab. 102", tipo: "Standard", capacidad: 3, tarifaBase: "35000" },
-  ]);
+  const os = await db
+    .insert(obrasSociales)
+    .values([
+      { nombre: "OSDE" },
+      { nombre: "Swiss Medical" },
+      { nombre: "IOMA" },
+      { nombre: "PAMI" },
+    ])
+    .returning();
 
-  console.log("Seed listo: 5 habitaciones creadas.");
+  const profs = await db
+    .insert(profesionales)
+    .values([
+      { nombre: "Dra. Ana López", especialidad: "Clínica médica", duracionTurnoDefault: 20 },
+      { nombre: "Dr. Martín Pérez", especialidad: "Cardiología", duracionTurnoDefault: 30 },
+      { nombre: "Lic. Sofía Ruiz", especialidad: "Psicología", duracionTurnoDefault: 40 },
+    ])
+    .returning();
+
+  for (const p of profs) {
+    await db.insert(profesionalObrasSociales).values(
+      os.slice(0, 2).map((o) => ({ profesionalId: p.id, obraSocialId: o.id })),
+    );
+  }
+
+  // Lunes a viernes, 9 a 13hs, para cada profesional.
+  const ventanas = profs.flatMap((p) =>
+    [1, 2, 3, 4, 5].map((diaSemana) => ({
+      profesionalId: p.id,
+      diaSemana,
+      horaInicio: "09:00",
+      horaFin: "13:00",
+      vigenciaDesde: new Date().toISOString().slice(0, 10),
+    })),
+  );
+  await db.insert(ventanasRecurrentes).values(ventanas);
+
+  console.log(`Seed listo: ${profs.length} profesionales, ${os.length} obras sociales, ${ventanas.length} ventanas.`);
   process.exit(0);
 }
 

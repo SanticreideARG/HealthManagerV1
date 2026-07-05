@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { changePassword, changeEmail, deleteUser, signIn, signOut, useSession } from "../../lib/auth.js";
-import { Modal } from "../habitaciones/NuevaHabitacion.js";
+import { Modal } from "../../components/Modal.js";
 
 type Seccion = "password" | "email" | "eliminar";
 
