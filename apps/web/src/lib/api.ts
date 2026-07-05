@@ -16,6 +16,8 @@ import type {
   ObraSocialUpdate,
   PacienteCreate,
   PacienteUpdate,
+  TurnoCreate,
+  BloqueoCreate,
 } from "@turnos/shared";
 import type {
   ApiClient,
@@ -35,6 +37,10 @@ import type {
   VentanaRecurrente,
   VentanaExcepcion,
   Paciente,
+  Turno,
+  Disponibilidad,
+  DisponibilidadSlot,
+  EstadoTurno,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -58,6 +64,10 @@ export type {
   VentanaRecurrente,
   VentanaExcepcion,
   Paciente,
+  Turno,
+  Disponibilidad,
+  DisponibilidadSlot,
+  EstadoTurno,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -144,6 +154,25 @@ const realApi: ApiClient = {
       request<Paciente>(`/pacientes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id: number) =>
       request<{ ok: true }>(`/pacientes/${id}`, { method: "DELETE" }),
+  },
+  turnos: {
+    list: (profesionalId: number, desde?: string, hasta?: string) => {
+      const qs = new URLSearchParams({ profesionalId: String(profesionalId) });
+      if (desde) qs.set("desde", desde);
+      if (hasta) qs.set("hasta", hasta);
+      return request<Turno[]>(`/turnos?${qs.toString()}`);
+    },
+    disponibilidad: (profesionalId: number, fecha: string) =>
+      request<Disponibilidad>(`/turnos/disponibilidad?profesionalId=${profesionalId}&fecha=${fecha}`),
+    create: (data: TurnoCreate) =>
+      request<Turno>("/turnos", { method: "POST", body: JSON.stringify(data) }),
+    createBloqueo: (data: BloqueoCreate) =>
+      request<Turno>("/turnos/bloqueos", { method: "POST", body: JSON.stringify(data) }),
+    confirmar: (id: number) => request<Turno>(`/turnos/${id}/confirmar`, { method: "POST" }),
+    arribo: (id: number) => request<Turno>(`/turnos/${id}/arribo`, { method: "POST" }),
+    atendido: (id: number) => request<Turno>(`/turnos/${id}/atendido`, { method: "POST" }),
+    ausente: (id: number) => request<Turno>(`/turnos/${id}/ausente`, { method: "POST" }),
+    cancelar: (id: number) => request<Turno>(`/turnos/${id}/cancelar`, { method: "POST" }),
   },
   config: {
     get: () => request<Config | null>("/config"),

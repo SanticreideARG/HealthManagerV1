@@ -15,7 +15,10 @@ import type {
   VentanaRecurrente,
   VentanaExcepcion,
   Paciente,
+  Turno,
+  DisponibilidadSlot,
 } from "./types.js";
+import { ApiError } from "./types.js";
 
 /** Datos en memoria para `pnpm dev:mock` (VITE_MOCK=1), sin base de datos. */
 
@@ -110,7 +113,82 @@ let landingLinks: LandingLink[] = [];
 let landingServicios: LandingServicio[] = [];
 let landingContactos: LandingContacto[] = [];
 
+let turnos: Turno[] = [];
 let nextId = 100;
+
+function diaSemanaDe(fecha: string): number {
+  return new Date(`${fecha}T00:00:00Z`).getUTCDay();
+}
+
+function minutosDesdeHHMM(hhmm: string): number {
+  const [h, m] = hhmm.split(":");
+  return Number(h ?? 0) * 60 + Number(m ?? 0);
+}
+
+function hhmmDesdeMinutos(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
+
+interface BloqueMock { inicioMin: number; finMin: number; duracionMin: number }
+
+function restarRangoMock(bloques: BloqueMock[], desdeMin: number, hastaMin: number): BloqueMock[] {
+  const resultado: BloqueMock[] = [];
+  for (const b of bloques) {
+    const inicioSolapa = Math.max(b.inicioMin, desdeMin);
+    const finSolapa = Math.min(b.finMin, hastaMin);
+    if (inicioSolapa >= finSolapa) {
+      resultado.push(b);
+      continue;
+    }
+    if (b.inicioMin < inicioSolapa) resultado.push({ ...b, finMin: inicioSolapa });
+    if (finSolapa < b.finMin) resultado.push({ ...b, inicioMin: finSolapa });
+  }
+  return resultado;
+}
+
+/** Réplica simplificada de apps/api/src/disponibilidad.ts para el modo mock (sin DB). */
+function calcularSlotsMock(profesionalId: number, fecha: string): DisponibilidadSlot[] {
+  const dia = diaSemanaDe(fecha);
+  const prof = profesionales.find((p) => p.id === profesionalId);
+  const duracionFallback = prof?.duracionTurnoDefault ?? config.duracionDefault;
+
+  let bloques: BloqueMock[] = ventanasRecurrentes
+    .filter(
+      (v) =>
+        v.activa &&
+        v.profesionalId === profesionalId &&
+        v.diaSemana === dia &&
+        v.vigenciaDesde <= fecha &&
+        (v.vigenciaHasta === null || fecha <= v.vigenciaHasta),
+    )
+    .map((v) => ({
+      inicioMin: minutosDesdeHHMM(v.horaInicio),
+      finMin: minutosDesdeHHMM(v.horaFin),
+      duracionMin: v.duracionTurno ?? duracionFallback,
+    }));
+
+  for (const ex of ventanasExcepciones.filter((e) => e.profesionalId === profesionalId && e.fecha === fecha)) {
+    const desdeMin = ex.horaInicio ? minutosDesdeHHMM(ex.horaInicio) : 0;
+    const hastaMin = ex.horaFin ? minutosDesdeHHMM(ex.horaFin) : 24 * 60;
+    bloques =
+      ex.tipo === "bloquea"
+        ? restarRangoMock(bloques, desdeMin, hastaMin)
+        : [...bloques, { inicioMin: desdeMin, finMin: hastaMin, duracionMin: duracionFallback }];
+  }
+
+  for (const t of turnos) {
+    if (t.profesionalId !== profesionalId || t.estado === "cancelado" || t.inicio.slice(0, 10) !== fecha) continue;
+    bloques = restarRangoMock(bloques, minutosDesdeHHMM(t.inicio.slice(11, 16)), minutosDesdeHHMM(t.fin.slice(11, 16)));
+  }
+
+  const slots: DisponibilidadSlot[] = [];
+  for (const b of bloques) {
+    for (let i = b.inicioMin; i + b.duracionMin <= b.finMin; i += b.duracionMin) {
+      slots.push({ horaInicio: hhmmDesdeMinutos(i), horaFin: hhmmDesdeMinutos(i + b.duracionMin) });
+    }
+  }
+  return slots.sort((a, b) => (a.horaInicio < b.horaInicio ? -1 : a.horaInicio > b.horaInicio ? 1 : 0));
+}
 
 export const mockApi: ApiClient = {
   public: {
@@ -257,6 +335,114 @@ export const mockApi: ApiClient = {
     remove: async (id) => {
       pacientes = pacientes.filter((p) => p.id !== id);
       return { ok: true };
+    },
+  },
+  turnos: {
+    list: async (profesionalId, desde, hasta) =>
+      turnos
+        .filter((t) => t.profesionalId === profesionalId && t.estado !== "cancelado")
+        .filter(
+          (t) =>
+            (!desde || new Date(t.inicio) >= new Date(desde)) &&
+            (!hasta || new Date(t.inicio) < new Date(hasta)),
+        )
+        .sort((a, b) => (a.inicio < b.inicio ? -1 : 1)),
+    disponibilidad: async (profesionalId, fecha) => ({
+      profesionalId,
+      fecha,
+      slots: calcularSlotsMock(profesionalId, fecha),
+    }),
+    create: async (data) => {
+      const seSolapa = turnos.some(
+        (t) =>
+          t.profesionalId === data.profesionalId &&
+          t.estado !== "cancelado" &&
+          !t.esSobreturno &&
+          !data.esSobreturno &&
+          t.inicio < data.fin &&
+          data.inicio < t.fin,
+      );
+      if (seSolapa) throw new ApiError(409, "Ese horario ya está ocupado para este profesional.", "overbooking");
+
+      let pacienteId = data.pacienteId ?? null;
+      let obraSocialId: number | null = null;
+      if (pacienteId != null) {
+        obraSocialId = pacientes.find((p) => p.id === pacienteId)?.obraSocialId ?? null;
+      } else if (data.paciente) {
+        const os = obrasSocialesCat.find((o) => o.id === data.paciente!.obraSocialId);
+        const nuevoPaciente: Paciente = {
+          id: nextId++,
+          documento: null,
+          tipoDocumento: null,
+          fechaNacimiento: null,
+          email: null,
+          telefono: null,
+          obraSocialId: null,
+          nroAfiliado: null,
+          notas: null,
+          createdAt: new Date().toISOString(),
+          ...data.paciente,
+          obraSocialNombre: os?.nombre ?? null,
+        };
+        pacientes = [...pacientes, nuevoPaciente];
+        pacienteId = nuevoPaciente.id;
+        obraSocialId = nuevoPaciente.obraSocialId;
+      }
+      const prof = profesionales.find((p) => p.id === data.profesionalId);
+      const esParticular = obraSocialId == null || !prof?.obrasSociales.some((os) => os.id === obraSocialId);
+
+      const nuevo: Turno = {
+        id: nextId++,
+        profesionalId: data.profesionalId,
+        pacienteId,
+        paciente: pacientes.find((p) => p.id === pacienteId)?.nombre ?? null,
+        inicio: data.inicio,
+        fin: data.fin,
+        estado: data.origen === "administrativo" ? "confirmado" : "solicitado",
+        esSobreturno: data.esSobreturno,
+        esParticular,
+        origen: data.origen,
+        notas: data.notas ?? null,
+      };
+      turnos = [...turnos, nuevo];
+      return nuevo;
+    },
+    createBloqueo: async (data) => {
+      const nuevo: Turno = {
+        id: nextId++,
+        profesionalId: data.profesionalId,
+        pacienteId: null,
+        paciente: null,
+        inicio: data.inicio,
+        fin: data.fin,
+        estado: "bloqueo",
+        esSobreturno: false,
+        esParticular: false,
+        origen: "administrativo",
+        notas: data.motivo ?? null,
+      };
+      turnos = [...turnos, nuevo];
+      return nuevo;
+    },
+    confirmar: async (id) => {
+      turnos = turnos.map((t) => (t.id === id ? { ...t, estado: "confirmado" } : t));
+      return turnos.find((t) => t.id === id)!;
+    },
+    arribo: async (id) => {
+      turnos = turnos.map((t) => (t.id === id ? { ...t, estado: "en_sala" } : t));
+      return turnos.find((t) => t.id === id)!;
+    },
+    atendido: async (id) => {
+      turnos = turnos.map((t) => (t.id === id ? { ...t, estado: "atendido" } : t));
+      return turnos.find((t) => t.id === id)!;
+    },
+    ausente: async (id) => {
+      turnos = turnos.map((t) => (t.id === id ? { ...t, estado: "ausente" } : t));
+      return turnos.find((t) => t.id === id)!;
+    },
+    cancelar: async (id) => {
+      turnos = turnos.map((t) => (t.id === id ? { ...t, estado: "cancelado" } : t));
+      return turnos.find((t) => t.id === id)!;
     },
   },
   config: {

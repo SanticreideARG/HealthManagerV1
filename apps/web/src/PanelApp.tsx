@@ -8,6 +8,7 @@ import { LandingManagerPage } from "./features/landing-manager/LandingManagerPag
 import { ActividadPage } from "./features/actividad/ActividadPage.js";
 import { ProfesionalesPage } from "./features/profesionales/ProfesionalesPage.js";
 import { PacientesPage } from "./features/pacientes/PacientesPage.js";
+import { AgendaPage } from "./features/agenda/AgendaPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import { MiCuenta } from "./features/auth/MiCuenta.js";
 import logo from "./assets/suites-man-logo.png";
@@ -160,23 +161,24 @@ export function PanelApp() {
           {allItems.find((n) => n.id === vista)?.label}
         </h1>
 
-        {vista === "agenda" && <Proximamente texto="Agenda por profesional — próximo paso de Fase 1." />}
-        {vista === "pacientes" && esStaff && <PacientesPage />}
-        {vista === "profesionales" && esStaff && <ProfesionalesPage />}
-        {vista === "landing" && esAdmin && <LandingManagerPage />}
-        {vista === "actividad" && esAdmin && <ActividadPage />}
-        {vista === "config" && esAdmin && <ConfiguracionPage />}
+        {allItems.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+            Todavía no hay una vista propia para profesionales (agenda/ventanas propias) —
+            gestioná tu perfil con el equipo administrativo mientras tanto.
+          </div>
+        ) : (
+          <>
+            {vista === "agenda" && esStaff && <AgendaPage />}
+            {vista === "pacientes" && esStaff && <PacientesPage />}
+            {vista === "profesionales" && esStaff && <ProfesionalesPage />}
+            {vista === "landing" && esAdmin && <LandingManagerPage />}
+            {vista === "actividad" && esAdmin && <ActividadPage />}
+            {vista === "config" && esAdmin && <ConfiguracionPage />}
+          </>
+        )}
       </main>
 
       {cuentaAbierta && <MiCuenta onClose={() => setCuentaAbierta(false)} />}
-    </div>
-  );
-}
-
-function Proximamente({ texto }: { texto: string }) {
-  return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
-      {texto}
     </div>
   );
 }
@@ -352,7 +354,7 @@ const iconActivity = (
 );
 
 const NAV_MAIN: NavDef[] = [
-  { id: "agenda",        label: "Agenda",        icon: iconCalendar },
+  { id: "agenda",        label: "Agenda",        icon: iconCalendar,    soloStaff: true },
   { id: "pacientes",     label: "Pacientes",     icon: iconUsers,       soloStaff: true },
   { id: "profesionales", label: "Profesionales", icon: iconStethoscope, soloStaff: true },
 ];

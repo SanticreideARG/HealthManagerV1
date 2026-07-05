@@ -71,6 +71,40 @@ export interface Paciente {
   createdAt: string;
 }
 
+export type EstadoTurno =
+  | "solicitado"
+  | "confirmado"
+  | "en_sala"
+  | "atendido"
+  | "ausente"
+  | "cancelado"
+  | "bloqueo";
+
+export interface Turno {
+  id: number;
+  profesionalId: number;
+  pacienteId: number | null;
+  paciente: string | null;
+  inicio: string;
+  fin: string;
+  estado: EstadoTurno;
+  esSobreturno: boolean;
+  esParticular: boolean;
+  origen: "online" | "administrativo";
+  notas: string | null;
+}
+
+export interface DisponibilidadSlot {
+  horaInicio: string;
+  horaFin: string;
+}
+
+export interface Disponibilidad {
+  profesionalId: number;
+  fecha: string;
+  slots: DisponibilidadSlot[];
+}
+
 export interface Config {
   id: number;
   nombre: string;
@@ -225,6 +259,17 @@ export interface ApiClient {
     create: (data: import("@turnos/shared").PacienteCreate) => Promise<Paciente>;
     update: (id: number, data: import("@turnos/shared").PacienteUpdate) => Promise<Paciente>;
     remove: (id: number) => Promise<{ ok: true }>;
+  };
+  turnos: {
+    list: (profesionalId: number, desde?: string, hasta?: string) => Promise<Turno[]>;
+    disponibilidad: (profesionalId: number, fecha: string) => Promise<Disponibilidad>;
+    create: (data: import("@turnos/shared").TurnoCreate) => Promise<Turno>;
+    createBloqueo: (data: import("@turnos/shared").BloqueoCreate) => Promise<Turno>;
+    confirmar: (id: number) => Promise<Turno>;
+    arribo: (id: number) => Promise<Turno>;
+    atendido: (id: number) => Promise<Turno>;
+    ausente: (id: number) => Promise<Turno>;
+    cancelar: (id: number) => Promise<Turno>;
   };
   config: {
     get: () => Promise<Config | null>;
