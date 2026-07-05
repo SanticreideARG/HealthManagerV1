@@ -105,6 +105,24 @@ export interface Disponibilidad {
   slots: DisponibilidadSlot[];
 }
 
+export interface TurnoDelDia {
+  id: number;
+  inicio: string;
+  fin: string;
+  estado: EstadoTurno;
+  esSobreturno: boolean;
+  esParticular: boolean;
+  notas: string | null;
+  profesionalId: number;
+  profesionalNombre: string;
+  especialidad: string;
+  pacienteId: number | null;
+  pacienteNombre: string | null;
+  documento: string | null;
+  telefono: string | null;
+  obraSocialNombre: string | null;
+}
+
 export interface Config {
   id: number;
   nombre: string;
@@ -226,6 +244,7 @@ export interface ApiClient {
   };
   profesionales: {
     list: () => Promise<Profesional[]>;
+    me: () => Promise<Profesional | null>;
     create: (data: import("@turnos/shared").ProfesionalCreate) => Promise<Profesional>;
     update: (id: number, data: import("@turnos/shared").ProfesionalUpdate) => Promise<Profesional>;
     remove: (id: number) => Promise<{ ok: true }>;
@@ -262,6 +281,7 @@ export interface ApiClient {
   };
   turnos: {
     list: (profesionalId: number, desde?: string, hasta?: string) => Promise<Turno[]>;
+    listaDelDia: (fecha: string) => Promise<TurnoDelDia[]>;
     disponibilidad: (profesionalId: number, fecha: string) => Promise<Disponibilidad>;
     create: (data: import("@turnos/shared").TurnoCreate) => Promise<Turno>;
     createBloqueo: (data: import("@turnos/shared").BloqueoCreate) => Promise<Turno>;

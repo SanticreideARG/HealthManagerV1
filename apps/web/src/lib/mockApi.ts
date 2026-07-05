@@ -17,6 +17,7 @@ import type {
   Paciente,
   Turno,
   DisponibilidadSlot,
+  TurnoDelDia,
 } from "./types.js";
 import { ApiError } from "./types.js";
 
@@ -199,6 +200,7 @@ export const mockApi: ApiClient = {
   },
   profesionales: {
     list: async () => profesionales,
+    me: async () => null, // en modo mock el rol siempre es "admin"; no aplica
     create: async (data) => {
       const { obraSocialIds, ...rest } = data;
       const nuevo: Profesional = {
@@ -352,6 +354,31 @@ export const mockApi: ApiClient = {
       fecha,
       slots: calcularSlotsMock(profesionalId, fecha),
     }),
+    listaDelDia: async (fecha): Promise<TurnoDelDia[]> =>
+      turnos
+        .filter((t) => t.estado !== "cancelado" && t.inicio.slice(0, 10) === fecha)
+        .map((t) => {
+          const prof = profesionales.find((p) => p.id === t.profesionalId);
+          const pac = pacientes.find((p) => p.id === t.pacienteId);
+          return {
+            id: t.id,
+            inicio: t.inicio,
+            fin: t.fin,
+            estado: t.estado,
+            esSobreturno: t.esSobreturno,
+            esParticular: t.esParticular,
+            notas: t.notas,
+            profesionalId: t.profesionalId,
+            profesionalNombre: prof?.nombre ?? "—",
+            especialidad: prof?.especialidad ?? "—",
+            pacienteId: t.pacienteId,
+            pacienteNombre: pac?.nombre ?? null,
+            documento: pac?.documento ?? null,
+            telefono: pac?.telefono ?? null,
+            obraSocialNombre: pac?.obraSocialNombre ?? null,
+          };
+        })
+        .sort((a, b) => (a.inicio < b.inicio ? -1 : 1)),
     create: async (data) => {
       const seSolapa = turnos.some(
         (t) =>

@@ -11,6 +11,7 @@ import {
   profesionales,
   profesionalObrasSociales,
   pacientes,
+  obrasSociales,
   configClinica,
   ventanasRecurrentes,
   ventanasExcepciones,
@@ -164,6 +165,41 @@ turnosRoutes.get("/", profesionalOrStaff, async (c) => {
     .from(turnos)
     .leftJoin(pacientes, eq(turnos.pacienteId, pacientes.id))
     .where(and(...conditions))
+    .orderBy(turnos.inicio);
+
+  return c.json(rows);
+});
+
+// ---------- Lista de pacientes del día (todos los profesionales) ----------
+
+turnosRoutes.get("/dia", staff, async (c) => {
+  const fecha = c.req.query("fecha");
+  if (!fecha) return c.json({ error: "Falta fecha" }, 400);
+  const { desde, hasta } = rangoUtcDelDiaAr(fecha);
+
+  const rows = await db
+    .select({
+      id: turnos.id,
+      inicio: turnos.inicio,
+      fin: turnos.fin,
+      estado: turnos.estado,
+      esSobreturno: turnos.esSobreturno,
+      esParticular: turnos.esParticular,
+      notas: turnos.notas,
+      profesionalId: turnos.profesionalId,
+      profesionalNombre: profesionales.nombre,
+      especialidad: profesionales.especialidad,
+      pacienteId: turnos.pacienteId,
+      pacienteNombre: pacientes.nombre,
+      documento: pacientes.documento,
+      telefono: pacientes.telefono,
+      obraSocialNombre: obrasSociales.nombre,
+    })
+    .from(turnos)
+    .innerJoin(profesionales, eq(turnos.profesionalId, profesionales.id))
+    .leftJoin(pacientes, eq(turnos.pacienteId, pacientes.id))
+    .leftJoin(obrasSociales, eq(pacientes.obraSocialId, obrasSociales.id))
+    .where(and(ne(turnos.estado, "cancelado"), gte(turnos.inicio, desde), lt(turnos.inicio, hasta)))
     .orderBy(turnos.inicio);
 
   return c.json(rows);

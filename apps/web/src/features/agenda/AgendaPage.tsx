@@ -1,19 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api.js";
-import type { Turno, EstadoTurno, DisponibilidadSlot } from "../../lib/api.js";
+import type { Turno, DisponibilidadSlot } from "../../lib/api.js";
+import { ESTADO_INFO, horaArDe } from "../../lib/turnoDisplay.js";
 import { NuevoTurnoModal } from "./NuevoTurnoModal.js";
 import { BloqueoModal } from "./BloqueoModal.js";
-
-const ESTADO_INFO: Record<EstadoTurno, { label: string; className: string }> = {
-  solicitado: { label: "A confirmar", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  confirmado: { label: "Confirmado", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
-  en_sala: { label: "En sala", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  atendido: { label: "Atendido", className: "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" },
-  ausente: { label: "Ausente", className: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300" },
-  cancelado: { label: "Cancelado", className: "bg-rose-50 text-rose-400 dark:bg-rose-950/20 dark:text-rose-500" },
-  bloqueo: { label: "Bloqueo", className: "border border-dashed border-slate-300 text-slate-500 dark:border-slate-600" },
-};
 
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -25,14 +16,18 @@ function addDaysISO(fecha: string, dias: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** "HH:MM" en hora de Argentina, a partir de un instante ISO (con cualquier offset). */
-function horaArDe(iso: string): string {
-  return new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).toISOString().slice(11, 16);
-}
-
-export function AgendaPage() {
+/**
+ * `profesionalIdFijo` la usa la vista propia del rol `profesional` (ver
+ * MiAgendaPage.tsx): oculta el selector y evita pedir el listado completo de
+ * profesionales, al que ese rol no tiene acceso (GET /profesionales es staff).
+ */
+export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number } = {}) {
   const qc = useQueryClient();
-  const profesionalesQ = useQuery({ queryKey: ["profesionales"], queryFn: api.profesionales.list });
+  const profesionalesQ = useQuery({
+    queryKey: ["profesionales"],
+    queryFn: api.profesionales.list,
+    enabled: profesionalIdFijo == null,
+  });
   const activos = profesionalesQ.data?.filter((p) => p.activo) ?? [];
 
   const [profesionalIdSel, setProfesionalIdSel] = useState<number | null>(null);
@@ -40,7 +35,7 @@ export function AgendaPage() {
   const [nuevoSlot, setNuevoSlot] = useState<DisponibilidadSlot | "sobreturno" | null>(null);
   const [bloqueoAbierto, setBloqueoAbierto] = useState(false);
 
-  const pid = profesionalIdSel ?? activos[0]?.id ?? null;
+  const pid = profesionalIdFijo ?? profesionalIdSel ?? activos[0]?.id ?? null;
 
   const disponibilidadQ = useQuery({
     queryKey: ["disponibilidad", pid, fecha],
@@ -68,27 +63,31 @@ export function AgendaPage() {
   const ausente = useMutation({ mutationFn: (id: number) => api.turnos.ausente(id), onSuccess: invalidar });
   const cancelar = useMutation({ mutationFn: (id: number) => api.turnos.cancelar(id), onSuccess: invalidar });
 
-  if (profesionalesQ.isLoading) return <p className="text-sm text-slate-400">Cargando…</p>;
-  if (activos.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
-        No hay profesionales activos. Cargá al menos uno en "Profesionales" para ver la agenda.
-      </div>
-    );
+  if (profesionalIdFijo == null) {
+    if (profesionalesQ.isLoading) return <p className="text-sm text-slate-400">Cargando…</p>;
+    if (activos.length === 0) {
+      return (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+          No hay profesionales activos. Cargá al menos uno en "Profesionales" para ver la agenda.
+        </div>
+      );
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={pid ?? ""}
-          onChange={(e) => setProfesionalIdSel(Number(e.target.value))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-        >
-          {activos.map((p) => (
-            <option key={p.id} value={p.id}>{p.nombre} — {p.especialidad}</option>
-          ))}
-        </select>
+        {profesionalIdFijo == null && (
+          <select
+            value={pid ?? ""}
+            onChange={(e) => setProfesionalIdSel(Number(e.target.value))}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {activos.map((p) => (
+              <option key={p.id} value={p.id}>{p.nombre} — {p.especialidad}</option>
+            ))}
+          </select>
+        )}
 
         <div className="flex items-center gap-1">
           <button onClick={() => setFecha(addDaysISO(fecha, -1))} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">

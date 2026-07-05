@@ -18,6 +18,7 @@ import {
   ventanaExcepcionCreate,
 } from "@turnos/shared";
 import { staff, adminOnly, profesionalOrStaff } from "../middleware/auth.js";
+import { auth } from "../auth.js";
 import { logAudit, computeDiff } from "../lib/audit.js";
 import { puedeGestionarProfesional } from "../lib/profesionalPropio.js";
 
@@ -26,6 +27,27 @@ export const profesionalesRoutes = new Hono();
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+async function obrasSocialesDe(profesionalId: number) {
+  return db
+    .select({ id: obrasSociales.id, nombre: obrasSociales.nombre })
+    .from(profesionalObrasSociales)
+    .innerJoin(obrasSociales, eq(profesionalObrasSociales.obraSocialId, obrasSociales.id))
+    .where(eq(profesionalObrasSociales.profesionalId, profesionalId));
+}
+
+// ---------- Perfil propio (rol profesional) ----------
+
+profesionalesRoutes.get("/me", profesionalOrStaff, async (c) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) return c.json({ error: "no_auth" }, 401);
+
+  const [row] = await db.select().from(profesionales).where(eq(profesionales.authUserId, session.user.id));
+  if (!row) {
+    return c.json({ error: "sin_profesional", message: "Tu usuario no está vinculado a ningún profesional." }, 404);
+  }
+  return c.json({ ...row, obrasSociales: await obrasSocialesDe(row.id) });
+});
 
 // ---------- Profesionales (ABM: admin) ----------
 

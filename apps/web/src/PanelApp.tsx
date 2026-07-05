@@ -9,18 +9,22 @@ import { ActividadPage } from "./features/actividad/ActividadPage.js";
 import { ProfesionalesPage } from "./features/profesionales/ProfesionalesPage.js";
 import { PacientesPage } from "./features/pacientes/PacientesPage.js";
 import { AgendaPage } from "./features/agenda/AgendaPage.js";
+import { MiAgendaPage } from "./features/agenda/MiAgendaPage.js";
+import { ListaDelDiaPage } from "./features/lista-dia/ListaDelDiaPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import { MiCuenta } from "./features/auth/MiCuenta.js";
 import logo from "./assets/suites-man-logo.png";
 
-type Vista = "agenda" | "pacientes" | "profesionales" | "landing" | "config" | "actividad";
+type Vista = "agenda" | "pacientes" | "profesionales" | "lista-dia" | "landing" | "config" | "actividad";
+type Rol = "admin" | "administrativo" | "profesional" | "paciente";
 
 interface NavDef {
   id: Vista;
   label: string;
   icon: React.ReactNode;
   soloAdmin?: boolean;
-  soloStaff?: boolean;
+  /** Roles que ven el ítem. Si se omite, aplica el default: admin + administrativo. */
+  roles?: Rol[];
 }
 
 interface NavGroup {
@@ -51,11 +55,12 @@ export function PanelApp() {
     return <Navigate to="/" replace />;
   }
 
-  const role = usandoMock
+  const role: Rol = usandoMock
     ? "admin"
-    : ((session?.user as { role?: string } | undefined)?.role ?? "paciente");
+    : ((session?.user as { role?: Rol } | undefined)?.role ?? "paciente");
   const esAdmin = role === "admin";
   const esStaff = role === "admin" || role === "administrativo";
+  const esProfesional = role === "profesional";
 
   // Paciente → no tiene acceso al panel, lo mandamos a la landing
   if (requiereAuth && role === "paciente") {
@@ -64,7 +69,7 @@ export function PanelApp() {
 
   const groups: NavGroup[] = [
     {
-      items: NAV_MAIN.filter((n) => !n.soloStaff || esStaff),
+      items: NAV_MAIN.filter((n) => (n.roles ?? ["admin", "administrativo"]).includes(role)),
     },
     {
       label: "Administración",
@@ -161,21 +166,14 @@ export function PanelApp() {
           {allItems.find((n) => n.id === vista)?.label}
         </h1>
 
-        {allItems.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
-            Todavía no hay una vista propia para profesionales (agenda/ventanas propias) —
-            gestioná tu perfil con el equipo administrativo mientras tanto.
-          </div>
-        ) : (
-          <>
-            {vista === "agenda" && esStaff && <AgendaPage />}
-            {vista === "pacientes" && esStaff && <PacientesPage />}
-            {vista === "profesionales" && esStaff && <ProfesionalesPage />}
-            {vista === "landing" && esAdmin && <LandingManagerPage />}
-            {vista === "actividad" && esAdmin && <ActividadPage />}
-            {vista === "config" && esAdmin && <ConfiguracionPage />}
-          </>
-        )}
+        {vista === "agenda" && esStaff && <AgendaPage />}
+        {vista === "agenda" && esProfesional && <MiAgendaPage />}
+        {vista === "pacientes" && esStaff && <PacientesPage />}
+        {vista === "profesionales" && esStaff && <ProfesionalesPage />}
+        {vista === "lista-dia" && esStaff && <ListaDelDiaPage />}
+        {vista === "landing" && esAdmin && <LandingManagerPage />}
+        {vista === "actividad" && esAdmin && <ActividadPage />}
+        {vista === "config" && esAdmin && <ConfiguracionPage />}
       </main>
 
       {cuentaAbierta && <MiCuenta onClose={() => setCuentaAbierta(false)} />}
@@ -353,10 +351,18 @@ const iconActivity = (
   </svg>
 );
 
+const iconListaDia = (
+  <svg {...svgProps}>
+    <path d="M9 4h6M9 4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2M9 4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" />
+    <path d="M9 11h6M9 15h4" />
+  </svg>
+);
+
 const NAV_MAIN: NavDef[] = [
-  { id: "agenda",        label: "Agenda",        icon: iconCalendar,    soloStaff: true },
-  { id: "pacientes",     label: "Pacientes",     icon: iconUsers,       soloStaff: true },
-  { id: "profesionales", label: "Profesionales", icon: iconStethoscope, soloStaff: true },
+  { id: "agenda",        label: "Agenda",        icon: iconCalendar,    roles: ["admin", "administrativo", "profesional"] },
+  { id: "pacientes",     label: "Pacientes",     icon: iconUsers },
+  { id: "profesionales", label: "Profesionales", icon: iconStethoscope },
+  { id: "lista-dia",     label: "Lista del día", icon: iconListaDia },
 ];
 
 const NAV_ADMIN: NavDef[] = [

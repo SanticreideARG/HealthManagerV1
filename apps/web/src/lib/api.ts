@@ -41,6 +41,7 @@ import type {
   Disponibilidad,
   DisponibilidadSlot,
   EstadoTurno,
+  TurnoDelDia,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -68,6 +69,7 @@ export type {
   Disponibilidad,
   DisponibilidadSlot,
   EstadoTurno,
+  TurnoDelDia,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -107,6 +109,11 @@ const realApi: ApiClient = {
   },
   profesionales: {
     list: () => request<Profesional[]>("/profesionales"),
+    me: () =>
+      request<Profesional>("/profesionales/me").catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }),
     create: (data: ProfesionalCreate) =>
       request<Profesional>("/profesionales", { method: "POST", body: JSON.stringify(data) }),
     update: (id: number, data: ProfesionalUpdate) =>
@@ -164,6 +171,7 @@ const realApi: ApiClient = {
     },
     disponibilidad: (profesionalId: number, fecha: string) =>
       request<Disponibilidad>(`/turnos/disponibilidad?profesionalId=${profesionalId}&fecha=${fecha}`),
+    listaDelDia: (fecha: string) => request<TurnoDelDia[]>(`/turnos/dia?fecha=${fecha}`),
     create: (data: TurnoCreate) =>
       request<Turno>("/turnos", { method: "POST", body: JSON.stringify(data) }),
     createBloqueo: (data: BloqueoCreate) =>
