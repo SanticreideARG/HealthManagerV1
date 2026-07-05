@@ -10,6 +10,10 @@ import type {
   LandingContacto,
   AuditLogPage,
   AuditVerifyResult,
+  Profesional,
+  ObraSocial,
+  VentanaRecurrente,
+  VentanaExcepcion,
 } from "./types.js";
 
 /** Datos en memoria para `pnpm dev:mock` (VITE_MOCK=1), sin base de datos. */
@@ -35,11 +39,51 @@ let config: Config = {
   landingCtaUrl: "#profesionales",
 };
 
-const profesionales: PublicProfesional[] = [
-  { id: 1, nombre: "Dra. Ana López", especialidad: "Clínica médica", ubicacion: "Sede Centro", color: "#0E5A6B" },
-  { id: 2, nombre: "Dr. Martín Pérez", especialidad: "Cardiología", ubicacion: "Sede Centro", color: "#2E8C79" },
-  { id: 3, nombre: "Lic. Sofía Ruiz", especialidad: "Psicología", ubicacion: null, color: "#B8482A" },
+let obrasSocialesCat: ObraSocial[] = [
+  { id: 1, nombre: "OSDE", activa: true },
+  { id: 2, nombre: "Swiss Medical", activa: true },
+  { id: 3, nombre: "IOMA", activa: true },
+  { id: 4, nombre: "PAMI", activa: true },
 ];
+
+let profesionales: Profesional[] = [
+  {
+    id: 1, authUserId: null, nombre: "Dra. Ana López", especialidad: "Clínica médica",
+    duracionTurnoDefault: 20, modoConfirmacionDefault: null, ubicacion: "Sede Centro",
+    color: "#0E5A6B", activo: true, createdAt: new Date().toISOString(),
+    obrasSociales: [{ id: 1, nombre: "OSDE" }, { id: 2, nombre: "Swiss Medical" }],
+  },
+  {
+    id: 2, authUserId: null, nombre: "Dr. Martín Pérez", especialidad: "Cardiología",
+    duracionTurnoDefault: 30, modoConfirmacionDefault: null, ubicacion: "Sede Centro",
+    color: "#2E8C79", activo: true, createdAt: new Date().toISOString(),
+    obrasSociales: [{ id: 1, nombre: "OSDE" }],
+  },
+  {
+    id: 3, authUserId: null, nombre: "Lic. Sofía Ruiz", especialidad: "Psicología",
+    duracionTurnoDefault: 40, modoConfirmacionDefault: "aprobacion", ubicacion: null,
+    color: "#B8482A", activo: true, createdAt: new Date().toISOString(),
+    obrasSociales: [],
+  },
+];
+
+let ventanasRecurrentes: VentanaRecurrente[] = [1, 2, 3].flatMap((profesionalId) =>
+  [1, 2, 3, 4, 5].map((diaSemana) => ({
+    id: profesionalId * 10 + diaSemana,
+    profesionalId,
+    diaSemana,
+    horaInicio: "09:00",
+    horaFin: "13:00",
+    duracionTurno: null,
+    modoConfirmacion: null,
+    vigenciaDesde: new Date().toISOString().slice(0, 10),
+    vigenciaHasta: null,
+    activa: true,
+    createdAt: new Date().toISOString(),
+  })),
+);
+
+let ventanasExcepciones: VentanaExcepcion[] = [];
 
 let usuarios: Usuario[] = [
   { id: "u1", name: "Admin Demo", email: "admin@demo.com", role: "admin", createdAt: new Date().toISOString() },
@@ -54,7 +98,108 @@ let nextId = 100;
 
 export const mockApi: ApiClient = {
   public: {
-    profesionales: async () => profesionales,
+    profesionales: async (): Promise<PublicProfesional[]> =>
+      profesionales
+        .filter((p) => p.activo)
+        .map((p) => ({ id: p.id, nombre: p.nombre, especialidad: p.especialidad, ubicacion: p.ubicacion, color: p.color })),
+  },
+  profesionales: {
+    list: async () => profesionales,
+    create: async (data) => {
+      const { obraSocialIds, ...rest } = data;
+      const nuevo: Profesional = {
+        id: nextId++,
+        authUserId: null,
+        duracionTurnoDefault: null,
+        modoConfirmacionDefault: null,
+        ubicacion: null,
+        color: null,
+        createdAt: new Date().toISOString(),
+        obrasSociales: obrasSocialesCat.filter((os) => obraSocialIds?.includes(os.id)),
+        ...rest,
+      };
+      profesionales = [...profesionales, nuevo];
+      return nuevo;
+    },
+    update: async (id, data) => {
+      const { obraSocialIds, ...rest } = data;
+      profesionales = profesionales.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              ...rest,
+              obrasSociales:
+                obraSocialIds !== undefined
+                  ? obrasSocialesCat.filter((os) => obraSocialIds.includes(os.id))
+                  : p.obrasSociales,
+            }
+          : p,
+      );
+      return profesionales.find((p) => p.id === id)!;
+    },
+    remove: async (id) => {
+      profesionales = profesionales.map((p) => (p.id === id ? { ...p, activo: false } : p));
+      return { ok: true };
+    },
+    ventanas: {
+      list: async (profesionalId) => ({
+        recurrentes: ventanasRecurrentes.filter((v) => v.profesionalId === profesionalId),
+        excepciones: ventanasExcepciones.filter((v) => v.profesionalId === profesionalId),
+      }),
+      createRecurrente: async (_profesionalId, data) => {
+        const nueva: VentanaRecurrente = {
+          id: nextId++,
+          vigenciaHasta: null,
+          duracionTurno: null,
+          modoConfirmacion: null,
+          createdAt: new Date().toISOString(),
+          vigenciaDesde: new Date().toISOString().slice(0, 10),
+          ...data,
+        };
+        ventanasRecurrentes = [...ventanasRecurrentes, nueva];
+        return nueva;
+      },
+      updateRecurrente: async (_profesionalId, ventanaId, data) => {
+        ventanasRecurrentes = ventanasRecurrentes.map((v) => (v.id === ventanaId ? { ...v, ...data } : v));
+        return ventanasRecurrentes.find((v) => v.id === ventanaId)!;
+      },
+      removeRecurrente: async (_profesionalId, ventanaId) => {
+        ventanasRecurrentes = ventanasRecurrentes.filter((v) => v.id !== ventanaId);
+        return { ok: true };
+      },
+      createExcepcion: async (_profesionalId, data) => {
+        const nueva: VentanaExcepcion = {
+          id: nextId++,
+          horaInicio: null,
+          horaFin: null,
+          motivo: null,
+          createdAt: new Date().toISOString(),
+          ...data,
+        };
+        ventanasExcepciones = [...ventanasExcepciones, nueva];
+        return nueva;
+      },
+      removeExcepcion: async (_profesionalId, excepcionId) => {
+        ventanasExcepciones = ventanasExcepciones.filter((v) => v.id !== excepcionId);
+        return { ok: true };
+      },
+    },
+  },
+  obrasSociales: {
+    list: async () => obrasSocialesCat,
+    create: async (data) => {
+      const nueva: ObraSocial = { id: nextId++, ...data };
+      obrasSocialesCat = [...obrasSocialesCat, nueva];
+      return nueva;
+    },
+    update: async (id, data) => {
+      obrasSocialesCat = obrasSocialesCat.map((os) => (os.id === id ? { ...os, ...data } : os));
+      return obrasSocialesCat.find((os) => os.id === id)!;
+    },
+    remove: async (id) => {
+      obrasSocialesCat = obrasSocialesCat.filter((os) => os.id !== id);
+      return { ok: true };
+    },
   },
   config: {
     get: async () => config,

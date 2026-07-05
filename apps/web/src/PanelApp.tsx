@@ -6,6 +6,7 @@ import { useUi } from "./store/ui.js";
 import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js";
 import { LandingManagerPage } from "./features/landing-manager/LandingManagerPage.js";
 import { ActividadPage } from "./features/actividad/ActividadPage.js";
+import { ProfesionalesPage } from "./features/profesionales/ProfesionalesPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import { MiCuenta } from "./features/auth/MiCuenta.js";
 import logo from "./assets/suites-man-logo.png";
@@ -17,6 +18,7 @@ interface NavDef {
   label: string;
   icon: React.ReactNode;
   soloAdmin?: boolean;
+  soloStaff?: boolean;
 }
 
 interface NavGroup {
@@ -51,6 +53,7 @@ export function PanelApp() {
     ? "admin"
     : ((session?.user as { role?: string } | undefined)?.role ?? "paciente");
   const esAdmin = role === "admin";
+  const esStaff = role === "admin" || role === "administrativo";
 
   // Paciente → no tiene acceso al panel, lo mandamos a la landing
   if (requiereAuth && role === "paciente") {
@@ -59,7 +62,7 @@ export function PanelApp() {
 
   const groups: NavGroup[] = [
     {
-      items: NAV_MAIN,
+      items: NAV_MAIN.filter((n) => !n.soloStaff || esStaff),
     },
     {
       label: "Administración",
@@ -156,9 +159,9 @@ export function PanelApp() {
           {allItems.find((n) => n.id === vista)?.label}
         </h1>
 
-        {vista === "agenda" && <Proximamente texto="Agenda por profesional — Fase 1." />}
-        {vista === "pacientes" && <Proximamente texto="Ficha y listado de pacientes — Fase 1." />}
-        {vista === "profesionales" && <Proximamente texto="ABM de profesionales y ventanas de trabajo — Fase 1." />}
+        {vista === "agenda" && <Proximamente texto="Agenda por profesional — próximo paso de Fase 1." />}
+        {vista === "pacientes" && <Proximamente texto="Ficha y listado de pacientes — próximo paso de Fase 1." />}
+        {vista === "profesionales" && esStaff && <ProfesionalesPage />}
         {vista === "landing" && esAdmin && <LandingManagerPage />}
         {vista === "actividad" && esAdmin && <ActividadPage />}
         {vista === "config" && esAdmin && <ConfiguracionPage />}
@@ -350,7 +353,7 @@ const iconActivity = (
 const NAV_MAIN: NavDef[] = [
   { id: "agenda",        label: "Agenda",        icon: iconCalendar },
   { id: "pacientes",     label: "Pacientes",     icon: iconUsers },
-  { id: "profesionales", label: "Profesionales", icon: iconStethoscope },
+  { id: "profesionales", label: "Profesionales", icon: iconStethoscope, soloStaff: true },
 ];
 
 const NAV_ADMIN: NavDef[] = [

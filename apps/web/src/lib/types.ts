@@ -6,6 +6,56 @@ export interface PublicProfesional {
   color: string | null;
 }
 
+export interface ObraSocial {
+  id: number;
+  nombre: string;
+  activa: boolean;
+}
+
+export interface Profesional {
+  id: number;
+  authUserId: string | null;
+  nombre: string;
+  especialidad: string;
+  duracionTurnoDefault: number | null;
+  modoConfirmacionDefault: "automatico" | "aprobacion" | null;
+  ubicacion: string | null;
+  color: string | null;
+  activo: boolean;
+  createdAt: string;
+  obrasSociales: { id: number; nombre: string }[];
+}
+
+export interface VentanaRecurrente {
+  id: number;
+  profesionalId: number;
+  diaSemana: number;
+  horaInicio: string;
+  horaFin: string;
+  duracionTurno: number | null;
+  modoConfirmacion: "automatico" | "aprobacion" | null;
+  vigenciaDesde: string;
+  vigenciaHasta: string | null;
+  activa: boolean;
+  createdAt: string;
+}
+
+export interface VentanaExcepcion {
+  id: number;
+  profesionalId: number;
+  fecha: string;
+  tipo: "agrega" | "bloquea";
+  horaInicio: string | null;
+  horaFin: string | null;
+  motivo: string | null;
+  createdAt: string;
+}
+
+export interface VentanasProfesional {
+  recurrentes: VentanaRecurrente[];
+  excepciones: VentanaExcepcion[];
+}
+
 export interface Config {
   id: number;
   nombre: string;
@@ -124,6 +174,36 @@ export interface AuditVerifyResult {
 export interface ApiClient {
   public: {
     profesionales: () => Promise<PublicProfesional[]>;
+  };
+  profesionales: {
+    list: () => Promise<Profesional[]>;
+    create: (data: import("@turnos/shared").ProfesionalCreate) => Promise<Profesional>;
+    update: (id: number, data: import("@turnos/shared").ProfesionalUpdate) => Promise<Profesional>;
+    remove: (id: number) => Promise<{ ok: true }>;
+    ventanas: {
+      list: (profesionalId: number) => Promise<VentanasProfesional>;
+      createRecurrente: (
+        profesionalId: number,
+        data: import("@turnos/shared").VentanaRecurrenteCreate,
+      ) => Promise<VentanaRecurrente>;
+      updateRecurrente: (
+        profesionalId: number,
+        ventanaId: number,
+        data: import("@turnos/shared").VentanaRecurrenteUpdate,
+      ) => Promise<VentanaRecurrente>;
+      removeRecurrente: (profesionalId: number, ventanaId: number) => Promise<{ ok: true }>;
+      createExcepcion: (
+        profesionalId: number,
+        data: import("@turnos/shared").VentanaExcepcionCreate,
+      ) => Promise<VentanaExcepcion>;
+      removeExcepcion: (profesionalId: number, excepcionId: number) => Promise<{ ok: true }>;
+    };
+  };
+  obrasSociales: {
+    list: () => Promise<ObraSocial[]>;
+    create: (data: import("@turnos/shared").ObraSocialCreate) => Promise<ObraSocial>;
+    update: (id: number, data: import("@turnos/shared").ObraSocialUpdate) => Promise<ObraSocial>;
+    remove: (id: number) => Promise<{ ok: true }>;
   };
   config: {
     get: () => Promise<Config | null>;

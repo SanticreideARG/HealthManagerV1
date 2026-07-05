@@ -7,6 +7,13 @@ import type {
   LandingServicioUpdate,
   LandingContactoCreate,
   LandingContactoUpdate,
+  ProfesionalCreate,
+  ProfesionalUpdate,
+  VentanaRecurrenteCreate,
+  VentanaRecurrenteUpdate,
+  VentanaExcepcionCreate,
+  ObraSocialCreate,
+  ObraSocialUpdate,
 } from "@turnos/shared";
 import type {
   ApiClient,
@@ -20,6 +27,11 @@ import type {
   LandingContacto,
   AuditLogPage,
   AuditVerifyResult,
+  Profesional,
+  ObraSocial,
+  VentanasProfesional,
+  VentanaRecurrente,
+  VentanaExcepcion,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -37,6 +49,11 @@ export type {
   LandingContacto,
   AuditLogPage,
   AuditVerifyResult,
+  Profesional,
+  ObraSocial,
+  VentanasProfesional,
+  VentanaRecurrente,
+  VentanaExcepcion,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -73,6 +90,47 @@ async function upload<T>(path: string, file: File, method = "POST"): Promise<T> 
 const realApi: ApiClient = {
   public: {
     profesionales: () => request<PublicProfesional[]>("/public/profesionales"),
+  },
+  profesionales: {
+    list: () => request<Profesional[]>("/profesionales"),
+    create: (data: ProfesionalCreate) =>
+      request<Profesional>("/profesionales", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: ProfesionalUpdate) =>
+      request<Profesional>(`/profesionales/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/profesionales/${id}`, { method: "DELETE" }),
+    ventanas: {
+      list: (profesionalId: number) =>
+        request<VentanasProfesional>(`/profesionales/${profesionalId}/ventanas`),
+      createRecurrente: (profesionalId: number, data: VentanaRecurrenteCreate) =>
+        request<VentanaRecurrente>(`/profesionales/${profesionalId}/ventanas`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      updateRecurrente: (profesionalId: number, ventanaId: number, data: VentanaRecurrenteUpdate) =>
+        request<VentanaRecurrente>(`/profesionales/${profesionalId}/ventanas/${ventanaId}`, {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        }),
+      removeRecurrente: (profesionalId: number, ventanaId: number) =>
+        request<{ ok: true }>(`/profesionales/${profesionalId}/ventanas/${ventanaId}`, { method: "DELETE" }),
+      createExcepcion: (profesionalId: number, data: VentanaExcepcionCreate) =>
+        request<VentanaExcepcion>(`/profesionales/${profesionalId}/excepciones`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      removeExcepcion: (profesionalId: number, excepcionId: number) =>
+        request<{ ok: true }>(`/profesionales/${profesionalId}/excepciones/${excepcionId}`, { method: "DELETE" }),
+    },
+  },
+  obrasSociales: {
+    list: () => request<ObraSocial[]>("/obras-sociales"),
+    create: (data: ObraSocialCreate) =>
+      request<ObraSocial>("/obras-sociales", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: ObraSocialUpdate) =>
+      request<ObraSocial>(`/obras-sociales/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/obras-sociales/${id}`, { method: "DELETE" }),
   },
   config: {
     get: () => request<Config | null>("/config"),
