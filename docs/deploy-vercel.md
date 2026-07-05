@@ -31,20 +31,35 @@ pnpm db:seed   # opcional
 En Vercel → Add New → Project → importás el repo y creás un proyecto con:
 
 - **Root Directory**: `apps/api`
-- **Framework Preset**: `Other`
-- **Build Command**: vacío (Vercel bundlea la función sola)
+- **Framework Preset**: `Other` (el `vercel.json` del proyecto fija `framework: null`)
+- **Build Command**: se toma de `vercel.json` (`pnpm build:vercel`) — no hace falta
+  configurarlo a mano en el dashboard.
 - **Install Command**: `pnpm install` (default; resuelve los workspaces)
 - **Environment Variables**:
   - `DATABASE_URL` → la connection string **pooled** de Neon. Si conectaste la
     base Neon a este proyecto desde el Marketplace, ya viene inyectada.
+  - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`
+    (ver [google-oauth-setup.md](google-oauth-setup.md)).
 
-Cómo funciona:
-- `apps/api/api/index.ts` es la **función serverless** (runtime Node) que exporta
-  la app Hono con el adaptador `hono/vercel`.
-- `apps/api/vercel.json` reescribe **todas** las rutas a `/api`, y Hono enruta
-  internamente por el path original (`/habitaciones`, `/reservas`, etc.).
-- El cliente de DB usa el **driver serverless de Neon** (`@neondatabase/serverless`
-  por WebSocket), que funciona en funciones efímeras y soporta transacciones.
+Cómo funciona (Build Output API de Vercel, **no** `@vercel/node` ni `hono/vercel`):
+- `apps/api/vercel.json` es minimal: `{ "framework": null, "buildCommand": "pnpm build:vercel" }`.
+- `pnpm build:vercel` corre `apps/api/scripts/build-vercel.mjs`, que bundlea
+  `src/vercel-entry.ts` con **esbuild** (autocontenido: inlinea `@turnos/db`,
+  `@turnos/shared`, etc.) y escribe a mano `.vercel/output/functions/api.func/index.js`
+  + `.vc-config.json` (runtime `nodejs20.x`) + `.vercel/output/config.json`
+  (`routes: [{ src: "/(.*)", dest: "/api" }]` — todo el tráfico va a la función,
+  Hono enruta internamente por el path original).
+- `src/vercel-entry.ts` exporta `getRequestListener(app.fetch)` de `@hono/node-server`:
+  adapta la app Hono (fetch-based) a la firma `(req, res)` que espera la función Node.
+- **Por qué no el enfoque estándar** (`@vercel/node` + `api/index.ts` autodetectado):
+  degrada tipos de Drizzle en el build de Vercel y tira `ERR_MODULE_NOT_FOUND` porque
+  Vercel no compila el TS de las deps de workspace. El Build Output API a mano
+  evita ambos problemas.
+- El cliente de DB (`packages/db/src/index.ts`) usa el **driver HTTP de Neon**
+  (`@neondatabase/serverless` + `drizzle-orm/neon-http`, fetch nativo, **sin
+  WebSocket**) — no el driver `neon-serverless`/`ws`. Este driver **no soporta
+  transacciones interactivas**; las operaciones que necesitan atomicidad (p. ej.
+  alta de turno con paciente nuevo) se resuelven con una sola sentencia CTE.
 
 Tras desplegar, probá: `https://turnos-api-xxx.vercel.app/health` → `{"status":"ok"}`.
 
@@ -75,4 +90,6 @@ Otro proyecto Vercel sobre el mismo repo:
   (`eq`, `and`, …) desde `@turnos/db`, no desde `drizzle-orm`, para evitar
   choques de tipos por peers duplicados en el build.
 - **Local vs Vercel**: en local `pnpm dev:api` corre `src/index.ts` (servidor Node
-  con `serve()`); en Vercel se usa `api/index.ts` (serverless). Misma app.
+  con `serve()` de `@hono/node-server`); en Vercel se usa `src/vercel-entry.ts`
+  (serverless, bundleado por `build-vercel.mjs`). Misma app Hono (`src/app.ts`) en
+  ambos casos, solo cambia el adaptador de entrada.

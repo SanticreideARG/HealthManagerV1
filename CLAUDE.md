@@ -192,6 +192,7 @@ esbuild autocontenido que inlinea las deps de workspace y escribe
 `functions/api.func/` + `config.json` (rutas a `/api`). `vercel.json` solo con
 `framework: null` + `buildCommand`. La **Web** con preset Vite y env `VITE_API_URL`.
 No usar `@vercel/node` nativo (degrada tipos + `ERR_MODULE_NOT_FOUND` por TS sin compilar).
+Guía paso a paso con la configuración de cada proyecto: `docs/deploy-vercel.md`.
 
 ## Autenticación (Better Auth)
 
@@ -245,12 +246,12 @@ landing (conviven disciplinas).
 
 ## Roadmap
 
-- **Fase 0 — Fork & purga**: renombrar workspaces a `@turnos/*`, migración `0000` limpia
+- **Fase 0 — Fork & purga** ✅: renombrar workspaces a `@turnos/*`, migración `0000` limpia
   con el EXCLUDE en `tstzrange` + sobreturno, borrar módulos de pago/tarifas/housekeeping.
-- **Fase 1 — MVP turnos**: CRUD profesionales · ventanas recurrentes + excepciones · alta
-  de turno (CTE→409) · agenda día/semana por profesional · cálculo de disponibilidad ·
-  estados (confirmar/arribo/atendido/ausente/cancelar) · lista de pacientes del día +
-  export · obras sociales · roles.
+- **Fase 1 — MVP turnos** (en curso): CRUD profesionales ✅ · ventanas recurrentes +
+  excepciones ✅ · obras sociales ✅ · alta de turno (CTE→409) · agenda día/semana por
+  profesional · cálculo de disponibilidad · estados (confirmar/arribo/atendido/ausente/
+  cancelar) · lista de pacientes del día + export · roles.
 - **Fase 2 — Portal paciente**: landing clínica · registro OAuth/email · reserva
   self-service (especialidad→profesional→fecha→slot) · "Mis turnos" (ver/cancelar) ·
   confirmación de solicitados por administrativo.
@@ -259,5 +260,7 @@ landing (conviven disciplinas).
 
 ## Estado actual
 
-> Greenfield. Nada implementado todavía. Próximo paso: migración `0000` (schema completo
-> + EXCLUDE) y esqueleto del monorepo. Este archivo describe el destino, no lo hecho.
+> Fase 0 completa (schema + purga del scaffold hotelero). Fase 1 en curso: CRUD de
+> profesionales, ventanas de trabajo (recurrentes + excepciones) y catálogo de obras
+> sociales ya están implementados (backend + UI del panel). Próximo paso: pacientes,
+> alta de turno con el CTE atómico (→409 overbooking) y el algoritmo de disponibilidad.

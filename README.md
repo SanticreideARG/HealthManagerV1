@@ -54,13 +54,23 @@ docker run --name turnos-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=turnos 
 ```
 apps/
   web/   SPA React (panel, landing pública)
-  api/   API Hono (auth, config, landing, audit log — Fase 1 agrega profesionales/turnos)
+  api/   API Hono (auth, config, landing, audit log, profesionales+ventanas, obras
+         sociales — Fase 1 en curso, falta pacientes/turnos/disponibilidad)
 packages/
   db/      schema Drizzle + migraciones SQL + runner
   shared/  esquemas Zod compartidos
 ```
 
+## Deploy
+
+Dos proyectos Vercel sobre el mismo repo (web + API), con la API usando la Build
+Output API de Vercel (esbuild, no `@vercel/node`). Guía paso a paso:
+👉 [docs/deploy-vercel.md](docs/deploy-vercel.md)
+
 ## Estado y roadmap
 
-Fase 0 (fork & purga del scaffold hotelero) completa. Ver la sección "Roadmap" en
-[CLAUDE.md](CLAUDE.md) para Fase 1 (MVP turnos) en adelante.
+Fase 0 (fork & purga del scaffold hotelero) completa. Fase 1 (MVP turnos) en curso:
+CRUD de profesionales + ventanas de trabajo (recurrentes y excepciones) y catálogo de
+obras sociales ya están. Ver la sección "Roadmap" en [CLAUDE.md](CLAUDE.md) para el
+resto (pacientes, alta de turno con CTE atómico, algoritmo de disponibilidad, agenda,
+estados, lista del día).
