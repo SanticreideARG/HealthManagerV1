@@ -14,6 +14,7 @@ import type {
   ObraSocial,
   VentanaRecurrente,
   VentanaExcepcion,
+  Paciente,
 } from "./types.js";
 
 /** Datos en memoria para `pnpm dev:mock` (VITE_MOCK=1), sin base de datos. */
@@ -84,6 +85,21 @@ let ventanasRecurrentes: VentanaRecurrente[] = [1, 2, 3].flatMap((profesionalId)
 );
 
 let ventanasExcepciones: VentanaExcepcion[] = [];
+
+let pacientes: Paciente[] = [
+  {
+    id: 1, nombre: "Juan Gómez", documento: "30111222", tipoDocumento: "DNI",
+    fechaNacimiento: "1985-03-14", email: "juan.gomez@example.com", telefono: "+54 9 11 5555-0001",
+    obraSocialId: 1, obraSocialNombre: "OSDE", nroAfiliado: "12345678", notas: null,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 2, nombre: "María Fernández", documento: "28999888", tipoDocumento: "DNI",
+    fechaNacimiento: "1990-07-22", email: null, telefono: "+54 9 11 5555-0002",
+    obraSocialId: null, obraSocialNombre: null, nroAfiliado: null, notas: "Prefiere turnos por la tarde.",
+    createdAt: new Date().toISOString(),
+  },
+];
 
 let usuarios: Usuario[] = [
   { id: "u1", name: "Admin Demo", email: "admin@demo.com", role: "admin", createdAt: new Date().toISOString() },
@@ -198,6 +214,48 @@ export const mockApi: ApiClient = {
     },
     remove: async (id) => {
       obrasSocialesCat = obrasSocialesCat.filter((os) => os.id !== id);
+      return { ok: true };
+    },
+  },
+  pacientes: {
+    list: async (q) => {
+      if (!q) return pacientes;
+      const qLower = q.toLowerCase();
+      return pacientes.filter(
+        (p) => p.nombre.toLowerCase().includes(qLower) || p.documento?.toLowerCase().includes(qLower),
+      );
+    },
+    create: async (data) => {
+      const obraSocial = obrasSocialesCat.find((os) => os.id === data.obraSocialId);
+      const nuevo: Paciente = {
+        id: nextId++,
+        documento: null,
+        tipoDocumento: null,
+        fechaNacimiento: null,
+        email: null,
+        telefono: null,
+        obraSocialId: null,
+        nroAfiliado: null,
+        notas: null,
+        createdAt: new Date().toISOString(),
+        ...data,
+        obraSocialNombre: obraSocial?.nombre ?? null,
+      };
+      pacientes = [...pacientes, nuevo];
+      return nuevo;
+    },
+    update: async (id, data) => {
+      const obraSocial =
+        data.obraSocialId !== undefined ? obrasSocialesCat.find((os) => os.id === data.obraSocialId) : undefined;
+      pacientes = pacientes.map((p) =>
+        p.id === id
+          ? { ...p, ...data, obraSocialNombre: obraSocial ? obraSocial.nombre : data.obraSocialId === null ? null : p.obraSocialNombre }
+          : p,
+      );
+      return pacientes.find((p) => p.id === id)!;
+    },
+    remove: async (id) => {
+      pacientes = pacientes.filter((p) => p.id !== id);
       return { ok: true };
     },
   },

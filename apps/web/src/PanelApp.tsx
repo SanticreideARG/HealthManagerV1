@@ -7,6 +7,7 @@ import { ConfiguracionPage } from "./features/configuracion/ConfiguracionPage.js
 import { LandingManagerPage } from "./features/landing-manager/LandingManagerPage.js";
 import { ActividadPage } from "./features/actividad/ActividadPage.js";
 import { ProfesionalesPage } from "./features/profesionales/ProfesionalesPage.js";
+import { PacientesPage } from "./features/pacientes/PacientesPage.js";
 import { useSession, signOut } from "./lib/auth.js";
 import { MiCuenta } from "./features/auth/MiCuenta.js";
 import logo from "./assets/suites-man-logo.png";
@@ -160,7 +161,7 @@ export function PanelApp() {
         </h1>
 
         {vista === "agenda" && <Proximamente texto="Agenda por profesional — próximo paso de Fase 1." />}
-        {vista === "pacientes" && <Proximamente texto="Ficha y listado de pacientes — próximo paso de Fase 1." />}
+        {vista === "pacientes" && esStaff && <PacientesPage />}
         {vista === "profesionales" && esStaff && <ProfesionalesPage />}
         {vista === "landing" && esAdmin && <LandingManagerPage />}
         {vista === "actividad" && esAdmin && <ActividadPage />}
@@ -352,7 +353,7 @@ const iconActivity = (
 
 const NAV_MAIN: NavDef[] = [
   { id: "agenda",        label: "Agenda",        icon: iconCalendar },
-  { id: "pacientes",     label: "Pacientes",     icon: iconUsers },
+  { id: "pacientes",     label: "Pacientes",     icon: iconUsers,       soloStaff: true },
   { id: "profesionales", label: "Profesionales", icon: iconStethoscope, soloStaff: true },
 ];
 

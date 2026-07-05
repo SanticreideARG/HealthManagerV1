@@ -249,9 +249,10 @@ landing (conviven disciplinas).
 - **Fase 0 — Fork & purga** ✅: renombrar workspaces a `@turnos/*`, migración `0000` limpia
   con el EXCLUDE en `tstzrange` + sobreturno, borrar módulos de pago/tarifas/housekeeping.
 - **Fase 1 — MVP turnos** (en curso): CRUD profesionales ✅ · ventanas recurrentes +
-  excepciones ✅ · obras sociales ✅ · alta de turno (CTE→409) · agenda día/semana por
-  profesional · cálculo de disponibilidad · estados (confirmar/arribo/atendido/ausente/
-  cancelar) · lista de pacientes del día + export · roles.
+  excepciones ✅ · obras sociales ✅ · CRUD pacientes ✅ · cálculo de disponibilidad ✅
+  (con tests) · alta de turno (CTE→409) ✅ · estados (confirmar/arribo/atendido/ausente/
+  cancelar) ✅ · falta: agenda día/semana por profesional (UI), lista de pacientes del
+  día + export.
 - **Fase 2 — Portal paciente**: landing clínica · registro OAuth/email · reserva
   self-service (especialidad→profesional→fecha→slot) · "Mis turnos" (ver/cancelar) ·
   confirmación de solicitados por administrativo.
@@ -260,7 +261,9 @@ landing (conviven disciplinas).
 
 ## Estado actual
 
-> Fase 0 completa (schema + purga del scaffold hotelero). Fase 1 en curso: CRUD de
-> profesionales, ventanas de trabajo (recurrentes + excepciones) y catálogo de obras
-> sociales ya están implementados (backend + UI del panel). Próximo paso: pacientes,
-> alta de turno con el CTE atómico (→409 overbooking) y el algoritmo de disponibilidad.
+> Fase 0 completa (schema + purga del scaffold hotelero). Fase 1 en curso: profesionales,
+> ventanas de trabajo, obras sociales y pacientes ya están (backend + UI del panel). El
+> algoritmo de disponibilidad (`apps/api/src/disponibilidad.ts`, con tests) y la ruta de
+> alta de turno con CTE atómico + 409 overbooking (`apps/api/src/routes/turnos.ts`) también
+> están, backend-only. Próximo paso: la UI de agenda (día/semana por profesional) que
+> consuma esas rutas, y la lista de pacientes del día + export.

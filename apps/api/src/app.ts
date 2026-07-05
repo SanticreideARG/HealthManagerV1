@@ -6,6 +6,8 @@ import { usuariosRoutes } from "./routes/usuarios.js";
 import { publicRoutes } from "./routes/public.js";
 import { profesionalesRoutes } from "./routes/profesionales.js";
 import { obrasSocialesRoutes } from "./routes/obrasSociales.js";
+import { pacientesRoutes } from "./routes/pacientes.js";
+import { turnosRoutes } from "./routes/turnos.js";
 import { landingManagerRoutes } from "./routes/landingManager.js";
 import { landingServiciosRoutes } from "./routes/landingServicios.js";
 import { landingContactosRoutes } from "./routes/landingContactos.js";
@@ -32,9 +34,10 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 // Better Auth (rutas bajo /api/auth).
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
-// Fase 1 agrega acá: pacientes, turnos.
 app.route("/profesionales", profesionalesRoutes);
 app.route("/obras-sociales", obrasSocialesRoutes);
+app.route("/pacientes", pacientesRoutes);
+app.route("/turnos", turnosRoutes);
 app.route("/config", configRoutes);
 app.route("/usuarios", usuariosRoutes);
 app.route("/landing-manager", landingManagerRoutes);

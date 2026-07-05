@@ -14,6 +14,8 @@ import type {
   VentanaExcepcionCreate,
   ObraSocialCreate,
   ObraSocialUpdate,
+  PacienteCreate,
+  PacienteUpdate,
 } from "@turnos/shared";
 import type {
   ApiClient,
@@ -32,6 +34,7 @@ import type {
   VentanasProfesional,
   VentanaRecurrente,
   VentanaExcepcion,
+  Paciente,
 } from "./types.js";
 import { ApiError } from "./types.js";
 import { mockApi } from "./mockApi.js";
@@ -54,6 +57,7 @@ export type {
   VentanasProfesional,
   VentanaRecurrente,
   VentanaExcepcion,
+  Paciente,
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -131,6 +135,15 @@ const realApi: ApiClient = {
       request<ObraSocial>(`/obras-sociales/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id: number) =>
       request<{ ok: true }>(`/obras-sociales/${id}`, { method: "DELETE" }),
+  },
+  pacientes: {
+    list: (q?: string) => request<Paciente[]>(`/pacientes${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+    create: (data: PacienteCreate) =>
+      request<Paciente>("/pacientes", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: PacienteUpdate) =>
+      request<Paciente>(`/pacientes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    remove: (id: number) =>
+      request<{ ok: true }>(`/pacientes/${id}`, { method: "DELETE" }),
   },
   config: {
     get: () => request<Config | null>("/config"),

@@ -18,35 +18,13 @@ import {
   ventanaExcepcionCreate,
 } from "@turnos/shared";
 import { staff, adminOnly, profesionalOrStaff } from "../middleware/auth.js";
-import { auth } from "../auth.js";
 import { logAudit, computeDiff } from "../lib/audit.js";
+import { puedeGestionarProfesional } from "../lib/profesionalPropio.js";
 
 export const profesionalesRoutes = new Hono();
 
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-/**
- * Un profesional gestiona sus propias ventanas; staff (admin/administrativo)
- * gestiona las de cualquiera. Devuelve el rol y, si aplica, el profesionalId
- * propio para el chequeo de pertenencia.
- */
-async function puedeGestionarProfesional(
-  c: Parameters<typeof auth.api.getSession>[0] extends never ? never : any,
-  profesionalId: number,
-): Promise<boolean> {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (role === "admin" || role === "administrativo") return true;
-  if (role === "profesional" && session) {
-    const [propio] = await db
-      .select({ id: profesionales.id })
-      .from(profesionales)
-      .where(eq(profesionales.authUserId, session.user.id));
-    return propio?.id === profesionalId;
-  }
-  return false;
 }
 
 // ---------- Profesionales (ABM: admin) ----------

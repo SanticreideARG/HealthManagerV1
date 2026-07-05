@@ -56,6 +56,21 @@ export interface VentanasProfesional {
   excepciones: VentanaExcepcion[];
 }
 
+export interface Paciente {
+  id: number;
+  nombre: string;
+  documento: string | null;
+  tipoDocumento: string | null;
+  fechaNacimiento: string | null;
+  email: string | null;
+  telefono: string | null;
+  obraSocialId: number | null;
+  obraSocialNombre: string | null;
+  nroAfiliado: string | null;
+  notas: string | null;
+  createdAt: string;
+}
+
 export interface Config {
   id: number;
   nombre: string;
@@ -203,6 +218,12 @@ export interface ApiClient {
     list: () => Promise<ObraSocial[]>;
     create: (data: import("@turnos/shared").ObraSocialCreate) => Promise<ObraSocial>;
     update: (id: number, data: import("@turnos/shared").ObraSocialUpdate) => Promise<ObraSocial>;
+    remove: (id: number) => Promise<{ ok: true }>;
+  };
+  pacientes: {
+    list: (q?: string) => Promise<Paciente[]>;
+    create: (data: import("@turnos/shared").PacienteCreate) => Promise<Paciente>;
+    update: (id: number, data: import("@turnos/shared").PacienteUpdate) => Promise<Paciente>;
     remove: (id: number) => Promise<{ ok: true }>;
   };
   config: {
