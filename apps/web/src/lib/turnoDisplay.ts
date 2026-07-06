@@ -14,3 +14,32 @@ export const ESTADO_INFO: Record<EstadoTurno, { label: string; className: string
 export function horaArDe(iso: string): string {
   return new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).toISOString().slice(11, 16);
 }
+
+/** "YYYY-MM-DD" en hora de Argentina, a partir de un instante ISO (con cualquier offset). */
+export function fechaArDe(iso: string): string {
+  return new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function hoyISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function addDaysISO(fecha: string, dias: number): string {
+  const d = new Date(`${fecha}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Día de la semana (0=domingo..6=sábado) de una fecha "YYYY-MM-DD", sin desfasajes de zona horaria. */
+export function diaSemanaDe(fecha: string): number {
+  return new Date(`${fecha}T00:00:00Z`).getUTCDay();
+}
+
+/** Lunes de la semana que contiene `fecha` (semana lun-dom). */
+export function lunesDeLaSemana(fecha: string): string {
+  const dia = diaSemanaDe(fecha); // 0=domingo..6=sábado
+  const offsetALunes = dia === 0 ? -6 : 1 - dia;
+  return addDaysISO(fecha, offsetALunes);
+}
+
+export const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];

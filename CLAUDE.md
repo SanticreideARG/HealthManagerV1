@@ -248,12 +248,12 @@ landing (conviven disciplinas).
 
 - **Fase 0 — Fork & purga** ✅: renombrar workspaces a `@turnos/*`, migración `0000` limpia
   con el EXCLUDE en `tstzrange` + sobreturno, borrar módulos de pago/tarifas/housekeeping.
-- **Fase 1 — MVP turnos** (en curso): CRUD profesionales ✅ · ventanas recurrentes +
-  excepciones ✅ · obras sociales ✅ · CRUD pacientes ✅ · cálculo de disponibilidad ✅
-  (con tests) · alta de turno (CTE→409) ✅ · estados (confirmar/arribo/atendido/ausente/
-  cancelar) ✅ · agenda día por profesional (UI) ✅ · vista propia del rol `profesional`
-  (agenda + ventanas, `GET /profesionales/me`) ✅ · lista de pacientes del día + export
-  Excel (todos los profesionales, `GET /turnos/dia`) ✅ · falta: agenda en vista semana.
+- **Fase 1 — MVP turnos** ✅ **completa**: CRUD profesionales · ventanas recurrentes +
+  excepciones · obras sociales · CRUD pacientes · cálculo de disponibilidad (con tests) ·
+  alta de turno (CTE→409) · estados (confirmar/arribo/atendido/ausente/cancelar) ·
+  agenda día y semana por profesional (UI) · vista propia del rol `profesional`
+  (agenda + ventanas, `GET /profesionales/me`) · lista de pacientes del día + export
+  Excel (todos los profesionales, `GET /turnos/dia`).
 - **Fase 2 — Portal paciente**: landing clínica · registro OAuth/email · reserva
   self-service (especialidad→profesional→fecha→slot) · "Mis turnos" (ver/cancelar) ·
   confirmación de solicitados por administrativo.
@@ -262,12 +262,12 @@ landing (conviven disciplinas).
 
 ## Estado actual
 
-> Fase 0 completa (schema + purga del scaffold hotelero). Fase 1 prácticamente completa:
-> profesionales, ventanas de trabajo, obras sociales, pacientes, agenda (vista día,
-> `features/agenda/`), vista propia del rol `profesional` (`MiAgendaPage.tsx` +
+> Fase 0 y Fase 1 completas. Profesionales, ventanas de trabajo, obras sociales,
+> pacientes, agenda (día + semana, `features/agenda/`, con `SemanaAgenda.tsx` como
+> resumen semanal navegable), vista propia del rol `profesional` (`MiAgendaPage.tsx` +
 > `GET /profesionales/me`) y lista de pacientes del día + export a Excel
-> (`features/lista-dia/`, `GET /turnos/dia`) ya están, backend + UI. El algoritmo de
+> (`features/lista-dia/`, `GET /turnos/dia`) — todo backend + UI. El algoritmo de
 > disponibilidad (`apps/api/src/disponibilidad.ts`, con tests) y la ruta de alta de turno
 > con CTE atómico + 409 overbooking (`apps/api/src/routes/turnos.ts`) sostienen todo esto.
-> Único pendiente de Fase 1: la agenda en vista semana (hoy solo día). Después sigue Fase 2
-> (portal paciente).
+> Deployado en Vercel (Neon conectado, ver docs/deploy-vercel.md) y verificado
+> end-to-end con datos reales. Próximo paso: Fase 2 (portal paciente).

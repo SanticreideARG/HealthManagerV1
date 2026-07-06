@@ -2,19 +2,10 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api.js";
 import type { Turno, DisponibilidadSlot } from "../../lib/api.js";
-import { ESTADO_INFO, horaArDe } from "../../lib/turnoDisplay.js";
+import { ESTADO_INFO, horaArDe, hoyISO, addDaysISO } from "../../lib/turnoDisplay.js";
 import { NuevoTurnoModal } from "./NuevoTurnoModal.js";
 import { BloqueoModal } from "./BloqueoModal.js";
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function addDaysISO(fecha: string, dias: number): string {
-  const d = new Date(`${fecha}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + dias);
-  return d.toISOString().slice(0, 10);
-}
+import { SemanaAgenda } from "./SemanaAgenda.js";
 
 /**
  * `profesionalIdFijo` la usa la vista propia del rol `profesional` (ver
@@ -32,6 +23,7 @@ export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number }
 
   const [profesionalIdSel, setProfesionalIdSel] = useState<number | null>(null);
   const [fecha, setFecha] = useState(hoyISO());
+  const [vistaSemana, setVistaSemana] = useState(false);
   const [nuevoSlot, setNuevoSlot] = useState<DisponibilidadSlot | "sobreturno" | null>(null);
   const [bloqueoAbierto, setBloqueoAbierto] = useState(false);
 
@@ -40,7 +32,7 @@ export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number }
   const disponibilidadQ = useQuery({
     queryKey: ["disponibilidad", pid, fecha],
     queryFn: () => api.turnos.disponibilidad(pid!, fecha),
-    enabled: pid != null,
+    enabled: pid != null && !vistaSemana,
   });
 
   const turnosQ = useQuery({
@@ -50,7 +42,7 @@ export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number }
       const hasta = new Date(desde.getTime() + 24 * 60 * 60 * 1000);
       return api.turnos.list(pid!, desde.toISOString(), hasta.toISOString());
     },
-    enabled: pid != null,
+    enabled: pid != null && !vistaSemana,
   });
 
   const invalidar = () => {
@@ -90,28 +82,65 @@ export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number }
         )}
 
         <div className="flex items-center gap-1">
-          <button onClick={() => setFecha(addDaysISO(fecha, -1))} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-            ← Anterior
+          <button onClick={() => setFecha(addDaysISO(fecha, vistaSemana ? -7 : -1))} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
+            ← {vistaSemana ? "Semana anterior" : "Anterior"}
           </button>
           <button onClick={() => setFecha(hoyISO())} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
             Hoy
           </button>
-          <button onClick={() => setFecha(addDaysISO(fecha, 1))} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-            Siguiente →
+          <button onClick={() => setFecha(addDaysISO(fecha, vistaSemana ? 7 : 1))} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
+            {vistaSemana ? "Semana siguiente" : "Siguiente"} →
           </button>
-          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+          {!vistaSemana && (
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" />
+          )}
         </div>
 
-        <div className="ml-auto flex gap-2">
-          <button onClick={() => setNuevoSlot("sobreturno")} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-            + Sobreturno
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-0.5 text-xs dark:bg-slate-800">
+          <button
+            onClick={() => setVistaSemana(false)}
+            className={`rounded px-3 py-1.5 font-medium transition-colors ${
+              !vistaSemana
+                ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            Día
           </button>
-          <button onClick={() => setBloqueoAbierto(true)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-            + Bloqueo
+          <button
+            onClick={() => setVistaSemana(true)}
+            className={`rounded px-3 py-1.5 font-medium transition-colors ${
+              vistaSemana
+                ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            Semana
           </button>
         </div>
+
+        {!vistaSemana && (
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => setNuevoSlot("sobreturno")} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
+              + Sobreturno
+            </button>
+            <button onClick={() => setBloqueoAbierto(true)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
+              + Bloqueo
+            </button>
+          </div>
+        )}
       </div>
 
+      {vistaSemana && pid != null ? (
+        <SemanaAgenda
+          profesionalId={pid}
+          fecha={fecha}
+          onSeleccionarDia={(f) => {
+            setFecha(f);
+            setVistaSemana(false);
+          }}
+        />
+      ) : (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-2 lg:col-span-2">
           <h2 className="text-sm font-semibold text-slate-600 dark:text-slate-300">Turnos del día</h2>
@@ -157,6 +186,7 @@ export function AgendaPage({ profesionalIdFijo }: { profesionalIdFijo?: number }
           </div>
         </div>
       </div>
+      )}
 
       {nuevoSlot && pid != null && (
         <NuevoTurnoModal
