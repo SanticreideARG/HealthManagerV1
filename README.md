@@ -1,4 +1,4 @@
-# Turnos Manager
+# Health Manager
 
 Gestor de turnos para clínicas, consultorios y profesionales médicos / de otras
 disciplinas. Cada profesional gestiona sus ventanas de trabajo y sobre ellas se

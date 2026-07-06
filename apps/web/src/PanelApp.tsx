@@ -38,7 +38,7 @@ export function PanelApp() {
   const { tema, toggleTema } = useUi();
   const { data: session, isPending } = useSession();
   const configQ = useQuery({ queryKey: ["config"], queryFn: api.config.get });
-  const appNombre = configQ.data?.nombre ?? "Turnos Manager";
+  const appNombre = configQ.data?.nombre ?? "Health Manager";
 
   const requiereAuth = !usandoMock;
 

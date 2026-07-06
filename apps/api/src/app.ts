@@ -28,7 +28,7 @@ app.use(
   }),
 );
 
-app.get("/", (c) => c.json({ ok: true, service: "turnos-manager-api" }));
+app.get("/", (c) => c.json({ ok: true, service: "health-manager-api" }));
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 // Better Auth (rutas bajo /api/auth).

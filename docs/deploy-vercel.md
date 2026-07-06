@@ -4,8 +4,8 @@ El monorepo se despliega como **dos proyectos Vercel** desde el mismo repo de
 GitHub: uno para la web (Vite) y otro para la API (Hono serverless).
 
 ```
-Repo  ──┬──> Proyecto "turnos-web"  (Root Directory: apps/web)
-        └──> Proyecto "turnos-api"  (Root Directory: apps/api)
+Repo  ──┬──> Proyecto "health-manager-v1-web"  (Root Directory: apps/web)
+        └──> Proyecto "health-manager-v1-api"  (Root Directory: apps/api)
 ```
 
 ---
@@ -26,7 +26,7 @@ pnpm db:seed   # opcional
 
 ---
 
-## 2. Proyecto API (`turnos-api`)
+## 2. Proyecto API (`health-manager-v1-api`)
 
 En Vercel → Add New → Project → importás el repo y creás un proyecto con:
 
@@ -61,18 +61,18 @@ Cómo funciona (Build Output API de Vercel, **no** `@vercel/node` ni `hono/verce
   transacciones interactivas**; las operaciones que necesitan atomicidad (p. ej.
   alta de turno con paciente nuevo) se resuelven con una sola sentencia CTE.
 
-Tras desplegar, probá: `https://turnos-api-xxx.vercel.app/health` → `{"status":"ok"}`.
+Tras desplegar, probá: `https://health-manager-v1-api.vercel.app/health` → `{"status":"ok"}`.
 
 ---
 
-## 3. Proyecto Web (`turnos-web`)
+## 3. Proyecto Web (`health-manager-v1-web`)
 
 Otro proyecto Vercel sobre el mismo repo:
 
 - **Root Directory**: `apps/web`
 - **Framework Preset**: `Vite`
 - **Environment Variables**:
-  - `VITE_API_URL` → la URL del proyecto API (ej. `https://turnos-api-xxx.vercel.app`).
+  - `VITE_API_URL` → la URL del proyecto API (ej. `https://health-manager-v1-api.vercel.app`).
     ⚠️ Vite **inyecta las env en build**: si cambiás esta URL, hay que redeployar la web.
 
 > No definas `VITE_MOCK` en producción (o ponelo en 0): en prod la web pega a la API real.

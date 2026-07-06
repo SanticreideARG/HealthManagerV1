@@ -20,7 +20,7 @@ export function LandingFooter() {
           <div className="flex items-center gap-3">
             <img src={logo} alt="" className="h-8 w-8 rounded-xl" />
             <span className="font-bold text-slate-800 dark:text-white">
-              Turnos Manager
+              Health Manager
             </span>
           </div>
 
@@ -38,7 +38,7 @@ export function LandingFooter() {
         </div>
 
         <div className="mt-8 border-t border-slate-100 pt-6 text-center text-xs text-slate-400 dark:border-white/[0.04] dark:text-white/25">
-          © {new Date().getFullYear()} Turnos Manager. Todos los derechos reservados.
+          © {new Date().getFullYear()} Health Manager. Todos los derechos reservados.
         </div>
       </div>
     </footer>

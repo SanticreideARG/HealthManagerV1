@@ -24,6 +24,8 @@ async function main() {
       { nombre: "Dra. Ana López", especialidad: "Clínica médica", duracionTurnoDefault: 20 },
       { nombre: "Dr. Martín Pérez", especialidad: "Cardiología", duracionTurnoDefault: 30 },
       { nombre: "Lic. Sofía Ruiz", especialidad: "Psicología", duracionTurnoDefault: 40 },
+      { nombre: "Dr. Lucas Medina", especialidad: "Pediatría", duracionTurnoDefault: 20 },
+      { nombre: "Dra. Valentina Torres", especialidad: "Traumatología", duracionTurnoDefault: 30 },
     ])
     .returning();
 

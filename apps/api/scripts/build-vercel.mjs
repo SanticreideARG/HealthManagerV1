@@ -65,7 +65,7 @@ writeFileSync(
 // Landing estático mínimo (no se sirve: todo se enruta a /api).
 writeFileSync(
   `${OUT}/static/index.html`,
-  "<!doctype html><meta charset=utf-8><title>Turnos Manager API</title><h1>Turnos Manager API</h1>\n",
+  "<!doctype html><meta charset=utf-8><title>Health Manager API</title><h1>Health Manager API</h1>\n",
 );
 
 console.log("Build Output generado en .vercel/output");

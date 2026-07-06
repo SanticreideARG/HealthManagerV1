@@ -1,5 +1,5 @@
 -- ============================================================
--- Turnos Manager — esquema inicial (MVP v1.0)
+-- Health Manager — esquema inicial (MVP v1.0)
 -- ============================================================
 -- Extensión necesaria para combinar igualdad (=) sobre profesional_id
 -- con el operador de solapamiento (&&) de rangos en un mismo EXCLUDE.

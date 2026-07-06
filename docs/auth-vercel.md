@@ -14,14 +14,14 @@ usuarios y se les asigna un rol.
 Sin esto el login "no funciona": cada cold start de la función usa un secreto
 distinto y la sesión nunca queda válida.
 
-Vercel → proyecto **API** (`turnos-manager-api`) → **Settings → Environment
+Vercel → proyecto **API** (`health-manager-v1-api`) → **Settings → Environment
 Variables** → agregá estas 3 (Production, y Preview si querés):
 
 | Variable | Valor | Ejemplo |
 |---|---|---|
 | `BETTER_AUTH_SECRET` | un secreto fuerte y fijo | salida de `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | URL pública del **API** | `https://turnos-manager-api.vercel.app` |
-| `WEB_URL` | URL pública de la **web** | `https://turnos-manager-web.vercel.app` |
+| `BETTER_AUTH_URL` | URL pública del **API** | `https://health-manager-v1-api.vercel.app` |
+| `WEB_URL` | URL pública de la **web** | `https://health-manager-v1-web.vercel.app` (ajustá al nombre real de tu proyecto web) |
 
 > Para generar el secreto: en una terminal `openssl rand -base64 32`
 > (o en Node: `node -e "console.log(crypto.randomBytes(32).toString('base64'))"`).
@@ -31,7 +31,7 @@ Después de guardar, **Deployments → Redeploy** del proyecto API.
 
 ### Verificación rápida
 ```bash
-curl -i -X POST https://turnos-manager-api.vercel.app/api/auth/sign-in/email \
+curl -i -X POST https://health-manager-v1-api.vercel.app/api/auth/sign-in/email \
   -H "Content-Type: application/json" \
   -d '{"email":"santi.creide@gmail.com","password":"TU_PASS"}'
 ```
@@ -44,11 +44,11 @@ variables estén bien y que el deploy haya tomado los cambios.
 
 **Opción A (recomendada): registrarse desde la web.**
 Abrí la web desplegada → en el login, "¿No tenés cuenta? Registrate" → completá
-nombre, email y contraseña. Queda con rol **cliente** por defecto.
+nombre, email y contraseña. Queda con rol **paciente** por defecto.
 
 **Opción B: por API (curl).**
 ```bash
-curl -X POST https://turnos-manager-api.vercel.app/api/auth/sign-up/email \
+curl -X POST https://health-manager-v1-api.vercel.app/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
   -d '{"email":"persona@mail.com","password":"contraseña","name":"Nombre"}'
 ```
@@ -57,14 +57,15 @@ curl -X POST https://turnos-manager-api.vercel.app/api/auth/sign-up/email \
 
 ---
 
-## Paso 3 — Asignar el rol (admin / gestor / cliente)
+## Paso 3 — Asignar el rol (admin / profesional / administrativo / paciente)
 
-Los nuevos usuarios nacen como **cliente**. Para hacerlos **admin** o **gestor**:
+Los nuevos usuarios nacen como **paciente**. Para hacerlos **admin**, **profesional** o
+**administrativo**:
 
 **Opción A: script local** (corre contra la misma base Neon de producción):
 ```bash
 pnpm db:promote persona@mail.com admin
-pnpm db:promote otra@mail.com gestor
+pnpm db:promote otra@mail.com administrativo
 ```
 
 **Opción B: SQL desde el panel de Neon** (Neon Console → tu proyecto → SQL Editor):
@@ -72,11 +73,15 @@ pnpm db:promote otra@mail.com gestor
 UPDATE auth_user SET role = 'admin' WHERE email = 'persona@mail.com';
 ```
 
-Roles (detalle en [roadmap.md](./roadmap.md)):
-- **admin**: acceso total (incluye Reportes, Tarifas, Configuración y ABM de habitaciones).
-- **gestor**: operación diaria (calendario, reservas, check-in/out, huéspedes). Sin
-  Reportes, Tarifas, Configuración ni alta/baja de habitaciones.
-- **cliente**: sin acceso al panel (reservado para el futuro portal público).
+Roles (detalle completo en [CLAUDE.md](../CLAUDE.md)):
+- **admin**: acceso total (config, ABM profesionales, obras sociales, landing, usuarios).
+- **profesional**: gestiona sus propias ventanas de trabajo y su agenda; puede emitir
+  sobreturnos. Requiere vincular el usuario a un registro de `profesionales`
+  (`auth_user_id`) para que `GET /profesionales/me` lo resuelva.
+- **administrativo**: ve disponibilidad, da de alta turnos y pacientes, gestiona la
+  lista del día. No toca config global ni el ABM de profesionales.
+- **paciente**: sin acceso al panel (reservado para el futuro portal de reserva,
+  Fase 2).
 
 ---
 
@@ -101,7 +106,7 @@ first-party). La web hace de proxy hacia la API:
    {
      "rewrites": [
        { "source": "/backend/:path*",
-         "destination": "https://turnos-manager-api.vercel.app/:path*" }
+         "destination": "https://health-manager-v1-api.vercel.app/:path*" }
      ]
    }
    ```

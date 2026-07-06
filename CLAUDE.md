@@ -1,4 +1,4 @@
-# Turnos Manager — Contexto para agentes
+# Health Manager — Contexto para agentes
 
 Gestor de turnos para clínicas, consultorios y profesionales médicos / de otras
 disciplinas. Cada profesional gestiona sus **ventanas de trabajo** (franjas horarias) y

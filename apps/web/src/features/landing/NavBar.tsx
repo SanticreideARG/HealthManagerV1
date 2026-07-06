@@ -60,7 +60,7 @@ export function NavBar({
         >
           <img src={logo} alt="" className="h-16 w-16 rounded-xl" />
           <span className={`text-lg font-bold transition-colors ${logoTextClass}`}>
-            Turnos Manager
+            Health Manager
           </span>
         </button>
 

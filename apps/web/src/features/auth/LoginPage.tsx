@@ -41,11 +41,11 @@ export function LoginPage() {
           <div className="mb-7 flex flex-col items-center text-center">
             <img
               src={logo}
-              alt="Turnos Manager"
+              alt="Health Manager"
               className="mb-4 h-48 w-48 rounded-2xl"
             />
             <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-              Turnos Manager
+              Health Manager
             </h1>
             <p className="mt-1 text-sm text-slate-400">
               Gestión de turnos para clínicas y consultorios

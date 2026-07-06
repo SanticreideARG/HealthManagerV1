@@ -9,7 +9,7 @@ fotos por unidad). La URL se guarda en la DB; el binario vive en Blob.
 
 1. Ir a **vercel.com → tu proyecto API** (el que deployea `apps/api`).
 2. Pestaña **Storage → Connect Store → Blob**.
-3. Crear un store (ej. `turnos-manager-blob`). Vercel agrega automáticamente
+3. Crear un store (ej. `health-manager-blob`). Vercel agrega automáticamente
    la variable `BLOB_READ_WRITE_TOKEN` al proyecto.
 4. En **Settings → Environment Variables**, copiar `BLOB_READ_WRITE_TOKEN` y
    agregarla también al proyecto **web** (si el upload se hace desde el cliente
